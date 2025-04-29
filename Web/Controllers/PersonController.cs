@@ -300,42 +300,7 @@ namespace Web.Controllers
             }
         }
 
-        /// <summary>
-        /// Reactiva una persona previamente desactivada
-        /// </summary>
-        /// <param name="id">ID de la persona a reactivar</param>
-        /// <returns>La persona reactivada</returns>
-        /// <response code="200">Retorna la persona reactivada</response>
-        /// <response code="400">ID proporcionado no válido</response>
-        /// <response code="404">Persona no encontrada</response>
-        /// <response code="500">Error interno del servidor</response>
-        [HttpPatch("{id}/reactivar")]
-        [ProducesResponseType(typeof(PersonDto), 200)]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
-        public async Task<IActionResult> ReactivarPersona(int id)
-        {
-            try
-            {
-                var personaReactivada = await _personBusiness.ReactivatePersonAsync(id);
-                return Ok(personaReactivada);
-            }
-            catch (ValidationException ex)
-            {
-                _logger.LogWarning(ex, "Validación fallida al reactivar persona con ID: {PersonId}", id);
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (EntityNotFoundException ex)
-            {
-                _logger.LogInformation(ex, "Persona no encontrada para reactivar con ID: {PersonId}", id);
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al reactivar persona con ID: {PersonId}", id);
-                return StatusCode(500, new { message = ex.Message });
-            }
-        }
+        
+        
     }
 }
