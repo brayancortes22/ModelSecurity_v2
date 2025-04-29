@@ -15,7 +15,7 @@ const CONSTANTS = {
         UPDATE_SUCCESS: "Registro actualizado exitosamente.",
         DELETE_SUCCESS: "Registro eliminado exitosamente.",
         ACTIVATE_SUCCESS: "Registro activado exitosamente.",
-        DEACTIVATE_SUCCESS: "Registro desactivado exitosamente.",
+        DEACTIVATE_SUCCESS: "Registro desactivada exitosamente.",
         CONFIRMATION: "¿Está seguro de realizar esta acción?",
         DELETE_CONFIRMATION: "¿Está seguro de eliminar este registro? Esta acción no se puede deshacer.",
         GENERIC_ERROR: "Ha ocurrido un error. Por favor, inténtelo nuevamente.",
@@ -36,7 +36,7 @@ const CONSTANTS = {
     // Tipos de identificación
     IDENTIFICATION_TYPES: [
         "DNI", 
-        "Pasaporte",
+        "Pasaporte", 
         "Tarjeta De Identidad",
         "Cédula", 
         "Licencia", 

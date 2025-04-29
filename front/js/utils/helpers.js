@@ -1,38 +1,53 @@
 /**
- * Funciones de utilidad para la aplicación
+ * Utilidades y funciones de ayuda para la aplicación
  */
 
 const Helpers = {
     /**
-     * Muestra un mensaje utilizando el modal
+     * Muestra un mensaje de notificación al usuario
      * @param {string} message - Mensaje a mostrar
-     * @param {string} title - Título del modal (opcional)
+     * @param {string} type - Tipo de mensaje (success, error, warning, info)
      */
-    showMessage(message, title = 'Información') {
-        const modalTitle = document.getElementById('modalTitle');
-        const modalMessage = document.getElementById('modalMessage');
-        const messageModal = new bootstrap.Modal(document.getElementById('messageModal'));
-        
-        modalTitle.textContent = title;
-        modalMessage.textContent = message;
-        messageModal.show();
+    showMessage(message, type = 'success') {
+        // Si se utiliza una librería de notificaciones, aquí se implementaría
+        // Por ahora, usamos alert simple o console.log
+        switch (type.toLowerCase()) {
+            case 'error':
+                console.error(message);
+                alert(`Error: ${message}`);
+                break;
+            case 'warning':
+                console.warn(message);
+                alert(`Advertencia: ${message}`);
+                break;
+            case 'info':
+                console.info(message);
+                alert(`Info: ${message}`);
+                break;
+            case 'success':
+            default:
+                console.log(message);
+                alert(`Éxito: ${message}`);
+                break;
+        }
     },
     
     /**
-     * Muestra un mensaje de error utilizando el modal
-     * @param {string|Error} error - Error o mensaje de error
+     * Muestra un mensaje de error al usuario
+     * @param {string} message - Mensaje de error
      */
-    showError(error) {
-        const message = error instanceof Error ? error.message : error;
-        this.showMessage(message, 'Error');
+    showError(message) {
+        this.showMessage(message, 'error');
     },
     
     /**
-     * Muestra u oculta el spinner de carga
-     * @param {boolean} show - true para mostrar, false para ocultar
+     * Muestra u oculta el indicador de carga
+     * @param {boolean} show - Indica si se debe mostrar u ocultar el spinner
      */
     toggleSpinner(show) {
         const spinner = document.getElementById('loadingSpinner');
+        if (!spinner) return;
+        
         if (show) {
             spinner.classList.remove('d-none');
         } else {
@@ -41,132 +56,122 @@ const Helpers = {
     },
     
     /**
-     * Formatea una fecha a formato local
-     * @param {string|Date} date - Fecha a formatear
-     * @param {Object} options - Opciones de formato (opcional)
+     * Crea un elemento de badge para mostrar el estado
+     * @param {boolean} active - Estado de activación
+     * @returns {string} HTML del badge
+     */
+    createStatusBadge(active) {
+        return active
+            ? '<span class="badge bg-success">Activo</span>'
+            : '<span class="badge bg-danger">Inactivo</span>';
+    },
+    
+    /**
+     * Formatea una fecha para mostrarla
+     * @param {Date|string} date - Fecha a formatear
      * @returns {string} Fecha formateada
      */
-    formatDate(date, options = {}) {
-        if (!date) return '';
+    formatDate(date) {
+        if (!date) return 'N/A';
         
-        const defaultOptions = { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        };
-        
-        const formatOptions = { ...defaultOptions, ...options };
-        const dateObj = date instanceof Date ? date : new Date(date);
-        
-        return dateObj.toLocaleDateString('es-ES', formatOptions);
+        try {
+            const dateObj = date instanceof Date ? date : new Date(date);
+            return dateObj.toLocaleString('es-ES', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            console.error('Error al formatear fecha:', error);
+            return 'Fecha inválida';
+        }
     },
     
     /**
-     * Valida que un campo no esté vacío
-     * @param {string} value - Valor a validar
-     * @returns {boolean} true si el valor no está vacío
+     * Trunca un texto si es muy largo
+     * @param {string} text - Texto a truncar
+     * @param {number} maxLength - Longitud máxima
+     * @returns {string} Texto truncado
      */
-    isNotEmpty(value) {
-        return value !== null && value !== undefined && value.toString().trim() !== '';
-    },
-    
-    /**
-     * Valida una dirección de email
-     * @param {string} email - Email a validar
-     * @returns {boolean} true si el email es válido
-     */
-    isValidEmail(email) {
-        const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-        return emailPattern.test(email);
-    },
-    
-    /**
-     * Valida un número de identificación
-     * @param {string|number} id - Número a validar
-     * @returns {boolean} true si el número es válido
-     */
-    isValidIdNumber(id) {
-        return /^\d+$/.test(id.toString());
-    },
-    
-    /**
-     * Formatea el texto para la visualización (por ejemplo, convierte camelCase a palabras)
-     * @param {string} text - Texto a formatear
-     * @returns {string} Texto formateado
-     */
-    formatLabel(text) {
+    truncateText(text, maxLength = 50) {
         if (!text) return '';
+        if (text.length <= maxLength) return text;
         
-        // Convierte camelCase a palabras separadas
-        const formatted = text
-            .replace(/([A-Z])/g, ' $1')
-            .replace(/^./, str => str.toUpperCase());
-            
-        return formatted;
+        return text.substring(0, maxLength) + '...';
     },
     
     /**
-     * Formatea un valor booleano como texto (Sí/No, Activo/Inactivo)
-     * @param {boolean} value - Valor a formatear
-     * @param {string} format - Formato de salida ('yesno' o 'activestatus')
-     * @returns {string} Texto formateado
-     */
-    formatBoolean(value, format = 'yesno') {
-        if (format === 'activestatus') {
-            return value ? 'Activo' : 'Inactivo';
-        }
-        return value ? 'Sí' : 'No';
-    },
-    
-    /**
-     * Crea un elemento HTML para un badge de estado (activo/inactivo)
-     * @param {boolean} isActive - Indicador de si está activo
-     * @returns {string} HTML para el badge
-     */
-    createStatusBadge(isActive) {
-        const badgeClass = isActive ? 'bg-success' : 'bg-danger';
-        const text = isActive ? 'Activo' : 'Inactivo';
-        return `<span class="badge ${badgeClass}">${text}</span>`;
-    },
-    
-    /**
-     * Convierte un objeto a parámetros de URL
-     * @param {Object} params - Objeto con los parámetros
-     * @returns {string} Cadena de parámetros URL
-     */
-    toQueryString(params) {
-        return Object.keys(params)
-            .filter(key => params[key] !== null && params[key] !== undefined)
-            .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
-            .join('&');
-    },
-    
-    /**
-     * Obtiene los parámetros de la URL actual
-     * @returns {Object} Objeto con los parámetros
-     */
-    getUrlParams() {
-        const params = {};
-        const queryString = window.location.search.substring(1);
-        
-        if (queryString) {
-            const pairs = queryString.split('&');
-            for (const pair of pairs) {
-                const [key, value] = pair.split('=');
-                params[decodeURIComponent(key)] = decodeURIComponent(value || '');
-            }
-        }
-        
-        return params;
-    },
-    
-    /**
-     * Genera un ID único temporal
+     * Genera un ID único
      * @returns {string} ID único
      */
-    generateTempId() {
-        return `temp_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    generateUniqueId() {
+        return Date.now().toString(36) + Math.random().toString(36).substring(2);
+    },
+    
+    /**
+     * Convierte un objeto FormData a un objeto JavaScript
+     * @param {FormData} formData - Objeto FormData
+     * @returns {Object} Objeto JavaScript
+     */
+    formDataToObject(formData) {
+        const object = {};
+        formData.forEach((value, key) => {
+            // Manejar checkboxes
+            if (key.endsWith('[]')) {
+                const arrayKey = key.slice(0, -2);
+                if (!object[arrayKey]) {
+                    object[arrayKey] = [];
+                }
+                object[arrayKey].push(value);
+            } else {
+                object[key] = value;
+            }
+        });
+        return object;
+    },
+    
+    /**
+     * Verifica si un valor es un número válido
+     * @param {any} value - Valor a verificar
+     * @returns {boolean} true si es un número válido
+     */
+    isValidNumber(value) {
+        return !isNaN(parseFloat(value)) && isFinite(value);
+    },
+    
+    /**
+     * Verifica si una cadena es un email válido
+     * @param {string} email - Email a verificar
+     * @returns {boolean} true si es un email válido
+     */
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    },
+    
+    /**
+     * Capitaliza la primera letra de una cadena
+     * @param {string} text - Texto a capitalizar
+     * @returns {string} Texto con la primera letra en mayúscula
+     */
+    capitalizeFirstLetter(text) {
+        if (!text) return '';
+        return text.charAt(0).toUpperCase() + text.slice(1);
+    },
+    
+    /**
+     * Desactivar un formulario para evitar envíos múltiples
+     * @param {HTMLFormElement} form - Formulario a desactivar
+     * @param {boolean} disabled - Si se debe desactivar o activar
+     */
+    disableForm(form, disabled = true) {
+        if (!form) return;
+        
+        const elements = form.elements;
+        for (let i = 0; i < elements.length; i++) {
+            elements[i].disabled = disabled;
+        }
     }
 };

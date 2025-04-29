@@ -1,215 +1,184 @@
 /**
- * Servicio API base para realizar solicitudes HTTP
- * Este servicio proporciona métodos reutilizables para realizar
- * operaciones CRUD contra la API del backend.
+ * Servicio base para realizar llamadas a la API
+ * Proporciona métodos para todas las operaciones HTTP comunes
  */
 
 const ApiService = {
     /**
-     * Obtiene el token de autenticación del almacenamiento local
-     * @returns {string|null} El token JWT o null si no existe
+     * Realiza una petición HTTP
+     * @param {string} url - URL a la que realizar la petición
+     * @param {Object} options - Opciones de la petición
+     * @returns {Promise<any>} Respuesta de la API
      */
-    getAuthToken() {
-        return localStorage.getItem(API_CONFIG.TOKEN_KEY);
-    },
-
-    /**
-     * Crea las cabeceras HTTP para una solicitud
-     * @param {boolean} includeAuth - Indica si se debe incluir el token de autenticación
-     * @returns {Object} Objeto con las cabeceras HTTP
-     */
-    getHeaders(includeAuth = true) {
-        const headers = { ...API_CONFIG.HEADERS };
-        
-        if (includeAuth) {
-            const token = this.getAuthToken();
+    async request(url, options = {}) {
+        try {
+            // Agregar URL base si la URL no es absoluta
+            const fullUrl = url.startsWith('http') 
+                ? url 
+                : `${API_CONFIG.BASE_URL}${url}`;
+            
+            // Agregar token de autenticación si está disponible
+            const token = AuthService.getAuthToken();
             if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
+                if (!options.headers) {
+                    options.headers = {};
+                }
+                options.headers['Authorization'] = `Bearer ${token}`;
             }
+            
+            // Configurar headers por defecto para JSON
+            if (!options.headers) {
+                options.headers = {};
+            }
+            
+            if (!options.headers['Content-Type'] && options.method !== 'GET') {
+                options.headers['Content-Type'] = 'application/json';
+            }
+            
+            // Configurar timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+            options.signal = controller.signal;
+            
+            // Realizar la petición
+            const response = await fetch(fullUrl, options);
+            
+            // Limpiar timeout
+            clearTimeout(timeoutId);
+            
+            // En caso de error HTTP
+            if (!response.ok) {
+                // Si es un error de autenticación y tenemos un token, intentar renovarlo
+                if (response.status === 401 && token) {
+                    const tokenRefreshed = await AuthService.refreshToken();
+                    
+                    if (tokenRefreshed) {
+                        // Reintentar con el nuevo token
+                        return this.request(url, options);
+                    } else {
+                        // Si no se pudo renovar, cerrar sesión
+                        AuthService.clearAuth();
+                        throw new Error('Sesión expirada. Por favor, inicie sesión nuevamente.');
+                    }
+                }
+                
+                // Intentar obtener mensaje de error del servidor
+                let errorMessage;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorData.error || `Error ${response.status}: ${response.statusText}`;
+                } catch (e) {
+                    errorMessage = `Error ${response.status}: ${response.statusText}`;
+                }
+                
+                throw new Error(errorMessage);
+            }
+            
+            // Comprobar si la respuesta está vacía
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                return response.text();
+            }
+            
+            // Devolver respuesta como JSON
+            return await response.json();
+            
+        } catch (error) {
+            // Manejar errores de red o timeout
+            if (error.name === 'AbortError') {
+                throw new Error('La solicitud ha excedido el tiempo máximo de espera.');
+            }
+            
+            console.error('Error en la petición API:', error);
+            throw error;
+        }
+    },
+    
+    /**
+     * Realiza una petición GET
+     * @param {string} url - URL a la que realizar la petición
+     * @param {Object} params - Parámetros de la petición
+     * @returns {Promise<any>} Respuesta de la API
+     */
+    async get(url, params = {}) {
+        // Construir URL con parámetros
+        let urlWithParams = url;
+        
+        if (Object.keys(params).length > 0) {
+            const queryParams = new URLSearchParams();
+            
+            for (const key in params) {
+                if (params[key] !== undefined && params[key] !== null) {
+                    queryParams.append(key, params[key]);
+                }
+            }
+            
+            urlWithParams = `${url}?${queryParams.toString()}`;
         }
         
-        return headers;
+        return this.request(urlWithParams, { method: 'GET' });
     },
-
+    
     /**
-     * Realiza una solicitud HTTP GET
-     * @param {string} endpoint - Ruta del endpoint
-     * @param {boolean} requiresAuth - Indica si la solicitud requiere autenticación
-     * @returns {Promise<any>} Promesa con la respuesta
+     * Realiza una petición POST
+     * @param {string} url - URL a la que realizar la petición
+     * @param {Object} data - Datos a enviar
+     * @returns {Promise<any>} Respuesta de la API
      */
-    async get(endpoint, requiresAuth = true) {
-        try {
-            const url = `${API_CONFIG.BASE_URL}${endpoint}`;
-            const headers = this.getHeaders(requiresAuth);
-            
-            const response = await fetch(url, {
-                method: 'GET',
-                headers,
-                credentials: 'include'
-            });
-            
-            return this.handleResponse(response);
-        } catch (error) {
-            return this.handleError(error);
-        }
+    async post(url, data = {}) {
+        return this.request(url, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
     },
-
+    
     /**
-     * Realiza una solicitud HTTP POST
-     * @param {string} endpoint - Ruta del endpoint
-     * @param {Object} data - Datos a enviar en el cuerpo de la solicitud
-     * @param {boolean} requiresAuth - Indica si la solicitud requiere autenticación
-     * @returns {Promise<any>} Promesa con la respuesta
+     * Realiza una petición PUT
+     * @param {string} url - URL a la que realizar la petición
+     * @param {Object} data - Datos a enviar
+     * @returns {Promise<any>} Respuesta de la API
      */
-    async post(endpoint, data, requiresAuth = true) {
-        try {
-            const url = `${API_CONFIG.BASE_URL}${endpoint}`;
-            const headers = this.getHeaders(requiresAuth);
-            
-            const response = await fetch(url, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(data),
-                credentials: 'include'
-            });
-            
-            return this.handleResponse(response);
-        } catch (error) {
-            return this.handleError(error);
-        }
+    async put(url, data = {}) {
+        return this.request(url, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
     },
-
+    
     /**
-     * Realiza una solicitud HTTP PUT
-     * @param {string} endpoint - Ruta del endpoint
-     * @param {Object} data - Datos a enviar en el cuerpo de la solicitud
-     * @param {boolean} requiresAuth - Indica si la solicitud requiere autenticación
-     * @returns {Promise<any>} Promesa con la respuesta
+     * Realiza una petición PATCH
+     * @param {string} url - URL a la que realizar la petición
+     * @param {Object} data - Datos a enviar
+     * @returns {Promise<any>} Respuesta de la API
      */
-    async put(endpoint, data, requiresAuth = true) {
-        try {
-            const url = `${API_CONFIG.BASE_URL}${endpoint}`;
-            const headers = this.getHeaders(requiresAuth);
-            
-            const response = await fetch(url, {
-                method: 'PUT',
-                headers,
-                body: JSON.stringify(data),
-                credentials: 'include'
-            });
-            
-            return this.handleResponse(response);
-        } catch (error) {
-            return this.handleError(error);
-        }
+    async patch(url, data = {}) {
+        return this.request(url, {
+            method: 'PATCH',
+            body: JSON.stringify(data)
+        });
     },
-
+    
     /**
-     * Realiza una solicitud HTTP PATCH
-     * @param {string} endpoint - Ruta del endpoint
-     * @param {Object} data - Datos a enviar en el cuerpo de la solicitud
-     * @param {boolean} requiresAuth - Indica si la solicitud requiere autenticación
-     * @returns {Promise<any>} Promesa con la respuesta
+     * Realiza una petición DELETE
+     * @param {string} url - URL a la que realizar la petición
+     * @returns {Promise<any>} Respuesta de la API
      */
-    async patch(endpoint, data = null, requiresAuth = true) {
-        try {
-            const url = `${API_CONFIG.BASE_URL}${endpoint}`;
-            const headers = this.getHeaders(requiresAuth);
-            const options = {
-                method: 'PATCH',
-                headers,
-                credentials: 'include'
-            };
-            
-            if (data) {
-                options.body = JSON.stringify(data);
-            }
-            
-            const response = await fetch(url, options);
-            
-            return this.handleResponse(response);
-        } catch (error) {
-            return this.handleError(error);
-        }
+    async delete(url) {
+        return this.request(url, { method: 'DELETE' });
     },
-
+    
     /**
-     * Realiza una solicitud HTTP DELETE
-     * @param {string} endpoint - Ruta del endpoint
-     * @param {boolean} requiresAuth - Indica si la solicitud requiere autenticación
-     * @returns {Promise<any>} Promesa con la respuesta
+     * Sube un archivo
+     * @param {string} url - URL a la que realizar la petición
+     * @param {FormData} formData - FormData con los archivos a subir
+     * @returns {Promise<any>} Respuesta de la API
      */
-    async delete(endpoint, requiresAuth = true) {
-        try {
-            const url = `${API_CONFIG.BASE_URL}${endpoint}`;
-            const headers = this.getHeaders(requiresAuth);
-            
-            const response = await fetch(url, {
-                method: 'DELETE',
-                headers,
-                credentials: 'include'
-            });
-            
-            return this.handleResponse(response);
-        } catch (error) {
-            return this.handleError(error);
-        }
-    },
-
-    /**
-     * Maneja la respuesta de una solicitud HTTP
-     * @param {Response} response - Objeto Response de la Fetch API
-     * @returns {Promise<any>} Promesa con los datos de la respuesta
-     * @throws {Error} Error si la respuesta no es exitosa
-     */
-    async handleResponse(response) {
-        // Primero verificamos si hay datos
-        let data;
-        try {
-            // Algunas respuestas pueden no tener cuerpo (como los 204 No Content)
-            data = response.status !== 204 ? await response.json() : null;
-        } catch (e) {
-            // Si no hay JSON, usamos un objeto vacío
-            data = {};
-        }
-
-        // Verificamos si la respuesta es exitosa (código 2xx)
-        if (response.ok) {
-            return data;
-        }
-
-        // Manejo específico según el código de estado HTTP
-        switch (response.status) {
-            case 400:
-                throw new Error(data.message || 'Solicitud incorrecta');
-            case 401:
-                // Desconectar al usuario si hay un error de autenticación
-                if (typeof AuthService !== 'undefined') {
-                    AuthService.logout();
-                }
-                throw new Error('No autorizado. Por favor, inicie sesión nuevamente.');
-            case 403:
-                throw new Error('Acceso prohibido. No tiene permisos para realizar esta acción.');
-            case 404:
-                throw new Error(data.message || 'Recurso no encontrado');
-            case 409:
-                throw new Error(data.message || 'Conflicto con el estado actual del recurso');
-            case 422:
-                throw new Error(data.message || 'Entidad no procesable. Verifique los datos enviados.');
-            case 500:
-                throw new Error('Error interno del servidor. Por favor, inténtelo más tarde.');
-            default:
-                throw new Error(`Error: ${response.status} - ${data.message || 'Error desconocido'}`);
-        }
-    },
-
-    /**
-     * Maneja los errores de red
-     * @param {Error} error - Objeto Error
-     * @throws {Error} Reenvía el error con un mensaje descriptivo
-     */
-    handleError(error) {
-        console.error('Error en la solicitud API:', error);
-        throw new Error('Error de conexión. Verifique su conexión a internet e inténtelo de nuevo.');
+    async uploadFile(url, formData) {
+        return this.request(url, {
+            method: 'POST',
+            body: formData,
+            // No establecer Content-Type para que el navegador establezca el boundary correcto
+            headers: {}
+        });
     }
 };

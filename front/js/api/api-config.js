@@ -1,110 +1,76 @@
 /**
- * Configuración central para los servicios de API
- * Este archivo permite cambiar fácilmente las URL base y otros parámetros
- * de configuración sin tener que modificar los servicios individuales.
+ * Configuración de la API
+ * Define las URL base y los endpoints para las llamadas a la API
  */
 
 const API_CONFIG = {
-    // URL base de la API - Cambiar según el entorno
+    // URL base de la API
     BASE_URL: 'http://localhost:5000/api',
     
-    // Tiempo máximo de espera para las solicitudes en milisegundos
+    // Timeout para peticiones en milisegundos
     TIMEOUT: 30000,
     
-    // Rutas específicas de los endpoints
+    // Endpoints de la API
     ENDPOINTS: {
         // Autenticación
         AUTH: {
             LOGIN: '/auth/login',
             LOGOUT: '/auth/logout',
-            REFRESH_TOKEN: '/auth/refresh-token',
-            VALIDATE_TOKEN: '/auth/validate',
+            REFRESH: '/auth/refresh',
+            VALIDATE: '/auth/validate'
         },
         
         // Usuarios
         USER: {
-            BASE: '/user',
-            BY_ID: (id) => `/user/${id}`,
-            ACTIVATE: (id) => `/user/${id}/activar`,
-            DEACTIVATE: (id) => `/user/${id}/desactivar`,
-            CHANGE_STATUS: (id) => `/user/${id}/cambiarEstado`,
+            BASE: '/users',
+            BY_ID: (id) => `/users/${id}`,
+            ACTIVATE: (id) => `/users/${id}/activate`,
+            DEACTIVATE: (id) => `/users/${id}/deactivate`,
+            CHANGE_STATUS: (id) => `/users/${id}/status`,
+            CHANGE_PASSWORD: (id) => `/users/${id}/password`
         },
         
         // Personas
         PERSON: {
-            BASE: '/person',
-            BY_ID: (id) => `/person/${id}`,
-            SOFT_DELETE: (id) => `/person/${id}/soft`,
-            ACTIVATE: (id) => `/person/${id}/activar`,
-            DEACTIVATE: (id) => `/person/${id}/desactivar`,
-            CHANGE_STATUS: (id) => `/person/${id}/cambiarEstado`,
-            REACTIVATE: (id) => `/person/${id}/reactivar`,
+            BASE: '/persons',
+            BY_ID: (id) => `/persons/${id}`,
+            ACTIVATE: (id) => `/persons/${id}/activate`,
+            DEACTIVATE: (id) => `/persons/${id}/deactivate`,
+            CHANGE_STATUS: (id) => `/persons/${id}/status`
         },
         
         // Roles
         ROL: {
-            BASE: '/rol',
-            BY_ID: (id) => `/rol/${id}`,
-            ACTIVATE: (id) => `/rol/${id}/activar`,
-            DEACTIVATE: (id) => `/rol/${id}/desactivar`,
-            CHANGE_STATUS: (id) => `/rol/${id}/cambiarEstado`,
+            BASE: '/roles',
+            BY_ID: (id) => `/roles/${id}`,
+            FORMS: (id) => `/roles/${id}/forms`,
+            ACTIVATE: (id) => `/roles/${id}/activate`,
+            DEACTIVATE: (id) => `/roles/${id}/deactivate`
         },
         
         // Módulos
         MODULE: {
-            BASE: '/module',
-            BY_ID: (id) => `/module/${id}`,
-            ACTIVATE: (id) => `/module/${id}/activar`,
-            DEACTIVATE: (id) => `/module/${id}/desactivar`,
-            CHANGE_STATUS: (id) => `/module/${id}/cambiarEstado`,
+            BASE: '/modules',
+            BY_ID: (id) => `/modules/${id}`,
+            FORMS: (id) => `/modules/${id}/forms`,
+            ACTIVATE: (id) => `/modules/${id}/activate`,
+            DEACTIVATE: (id) => `/modules/${id}/deactivate`
         },
         
         // Formularios
         FORM: {
-            BASE: '/form',
-            BY_ID: (id) => `/form/${id}`,
-            ACTIVATE: (id) => `/form/${id}/activar`,
-            DEACTIVATE: (id) => `/form/${id}/desactivar`,
-            CHANGE_STATUS: (id) => `/form/${id}/cambiarEstado`,
+            BASE: '/forms',
+            BY_ID: (id) => `/forms/${id}`,
+            ACTIVATE: (id) => `/forms/${id}/activate`,
+            DEACTIVATE: (id) => `/forms/${id}/deactivate`
         },
         
-        // Relación Rol-Formulario
-        ROL_FORM: {
-            BASE: '/rolform',
-            BY_ID: (id) => `/rolform/${id}`,
-        },
-        
-        // Relación Formulario-Módulo
-        FORM_MODULE: {
-            BASE: '/formmodule',
-            BY_ID: (id) => `/formmodule/${id}`,
-        },
-        
-        // Relación Usuario-Rol
-        USER_ROL: {
-            BASE: '/userrol',
-            BY_ID: (id) => `/userrol/${id}`,
-        },
-    },
-    
-    // Configuración de cabeceras comunes
-    HEADERS: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-    
-    // Nombre de la clave para el token en localStorage
-    TOKEN_KEY: 'modelSecurity_token',
-    
-    // Nombre de la clave para el usuario en localStorage
-    USER_KEY: 'modelSecurity_user',
+        // Registro de cambios
+        CHANGELOG: {
+            BASE: '/changelog',
+            BY_ID: (id) => `/changelog/${id}`,
+            BY_TABLE: (table) => `/changelog/table/${table}`,
+            BY_USER: (user) => `/changelog/user/${user}`
+        }
+    }
 };
-
-/**
- * Cambia la URL base de la API según el entorno
- * @param {string} newBaseUrl - Nueva URL base para la API
- */
-function setApiBaseUrl(newBaseUrl) {
-    API_CONFIG.BASE_URL = newBaseUrl;
-    console.log(`API base URL cambiada a: ${newBaseUrl}`);
-}

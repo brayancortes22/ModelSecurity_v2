@@ -1,24 +1,25 @@
 /**
- * Servicio para gestionar operaciones relacionadas con personas
- * Utiliza el ApiService base para comunicarse con el backend
+ * Servicio para gestionar las personas en el sistema
+ * Proporciona métodos para realizar operaciones CRUD sobre las personas
  */
 
 const PersonService = {
     /**
      * Obtiene todas las personas
+     * @param {Object} params - Parámetros para filtrar y paginar
      * @returns {Promise<Array>} Lista de personas
      */
-    async getAll() {
+    async getAll(params = {}) {
         try {
-            return await ApiService.get(API_CONFIG.ENDPOINTS.PERSON.BASE);
+            return await ApiService.get(API_CONFIG.ENDPOINTS.PERSON.BASE, params);
         } catch (error) {
-            console.error('Error al obtener las personas:', error);
+            console.error('Error al obtener personas:', error);
             throw error;
         }
     },
-
+    
     /**
-     * Obtiene una persona específica por su ID
+     * Obtiene una persona por su ID
      * @param {number} id - ID de la persona
      * @returns {Promise<Object>} Datos de la persona
      */
@@ -26,83 +27,54 @@ const PersonService = {
         try {
             return await ApiService.get(API_CONFIG.ENDPOINTS.PERSON.BY_ID(id));
         } catch (error) {
-            console.error(`Error al obtener la persona con ID ${id}:`, error);
+            console.error(`Error al obtener persona con ID ${id}:`, error);
             throw error;
         }
     },
-
+    
     /**
      * Crea una nueva persona
-     * @param {Object} personData - Datos de la persona a crear
-     * @returns {Promise<Object>} Datos de la persona creada
+     * @param {Object} personData - Datos de la persona
+     * @returns {Promise<Object>} Persona creada
      */
     async create(personData) {
         try {
             return await ApiService.post(API_CONFIG.ENDPOINTS.PERSON.BASE, personData);
         } catch (error) {
-            console.error('Error al crear la persona:', error);
+            console.error('Error al crear persona:', error);
             throw error;
         }
     },
-
+    
     /**
-     * Actualiza una persona existente (reemplazo completo)
+     * Actualiza una persona existente
      * @param {number} id - ID de la persona
-     * @param {Object} personData - Nuevos datos de la persona
-     * @returns {Promise<Object>} Datos actualizados de la persona
+     * @param {Object} personData - Datos actualizados de la persona
+     * @returns {Promise<Object>} Persona actualizada
      */
     async update(id, personData) {
         try {
             return await ApiService.put(API_CONFIG.ENDPOINTS.PERSON.BY_ID(id), personData);
         } catch (error) {
-            console.error(`Error al actualizar la persona con ID ${id}:`, error);
+            console.error(`Error al actualizar persona con ID ${id}:`, error);
             throw error;
         }
     },
-
+    
     /**
-     * Actualiza parcialmente una persona
+     * Elimina una persona (desactivación lógica)
      * @param {number} id - ID de la persona
-     * @param {Object} partialData - Datos parciales a actualizar
-     * @returns {Promise<Object>} Datos actualizados de la persona
-     */
-    async patch(id, partialData) {
-        try {
-            return await ApiService.patch(API_CONFIG.ENDPOINTS.PERSON.BY_ID(id), partialData);
-        } catch (error) {
-            console.error(`Error al actualizar parcialmente la persona con ID ${id}:`, error);
-            throw error;
-        }
-    },
-
-    /**
-     * Elimina permanentemente una persona
-     * @param {number} id - ID de la persona a eliminar
-     * @returns {Promise<void>}
+     * @returns {Promise<Object>} Resultado de la operación
      */
     async delete(id) {
         try {
             return await ApiService.delete(API_CONFIG.ENDPOINTS.PERSON.BY_ID(id));
         } catch (error) {
-            console.error(`Error al eliminar la persona con ID ${id}:`, error);
+            console.error(`Error al eliminar persona con ID ${id}:`, error);
             throw error;
         }
     },
-
-    /**
-     * Desactiva una persona (eliminación lógica)
-     * @param {number} id - ID de la persona a desactivar
-     * @returns {Promise<void>}
-     */
-    async softDelete(id) {
-        try {
-            return await ApiService.delete(API_CONFIG.ENDPOINTS.PERSON.SOFT_DELETE(id));
-        } catch (error) {
-            console.error(`Error al desactivar la persona con ID ${id}:`, error);
-            throw error;
-        }
-    },
-
+    
     /**
      * Activa una persona
      * @param {number} id - ID de la persona
@@ -110,13 +82,13 @@ const PersonService = {
      */
     async activate(id) {
         try {
-            return await ApiService.patch(API_CONFIG.ENDPOINTS.PERSON.ACTIVATE(id));
+            return await ApiService.post(API_CONFIG.ENDPOINTS.PERSON.ACTIVATE(id));
         } catch (error) {
-            console.error(`Error al activar la persona con ID ${id}:`, error);
+            console.error(`Error al activar persona con ID ${id}:`, error);
             throw error;
         }
     },
-
+    
     /**
      * Desactiva una persona
      * @param {number} id - ID de la persona
@@ -124,40 +96,38 @@ const PersonService = {
      */
     async deactivate(id) {
         try {
-            return await ApiService.patch(API_CONFIG.ENDPOINTS.PERSON.DEACTIVATE(id));
+            return await ApiService.post(API_CONFIG.ENDPOINTS.PERSON.DEACTIVATE(id));
         } catch (error) {
-            console.error(`Error al desactivar la persona con ID ${id}:`, error);
+            console.error(`Error al desactivar persona con ID ${id}:`, error);
             throw error;
         }
     },
-
+    
     /**
      * Cambia el estado de activación de una persona
      * @param {number} id - ID de la persona
-     * @param {boolean} status - Nuevo estado (true=activo, false=inactivo)
+     * @param {boolean} active - Nuevo estado de activación
      * @returns {Promise<Object>} Resultado de la operación
      */
-    async changeStatus(id, status) {
+    async changeStatus(id, active) {
         try {
-            return await ApiService.patch(
-                `${API_CONFIG.ENDPOINTS.PERSON.CHANGE_STATUS(id)}?estado=${status}`
-            );
+            return await ApiService.post(API_CONFIG.ENDPOINTS.PERSON.CHANGE_STATUS(id), { active });
         } catch (error) {
-            console.error(`Error al cambiar el estado de la persona con ID ${id}:`, error);
+            console.error(`Error al cambiar estado de persona con ID ${id}:`, error);
             throw error;
         }
     },
-
+    
     /**
-     * Reactiva una persona previamente desactivada
-     * @param {number} id - ID de la persona
-     * @returns {Promise<Object>} Datos de la persona reactivada
+     * Busca personas por nombre o identificación
+     * @param {string} searchTerm - Término de búsqueda
+     * @returns {Promise<Array>} Lista de personas que coinciden con la búsqueda
      */
-    async reactivate(id) {
+    async search(searchTerm) {
         try {
-            return await ApiService.patch(API_CONFIG.ENDPOINTS.PERSON.REACTIVATE(id));
+            return await ApiService.get(API_CONFIG.ENDPOINTS.PERSON.BASE, { search: searchTerm });
         } catch (error) {
-            console.error(`Error al reactivar la persona con ID ${id}:`, error);
+            console.error(`Error al buscar personas con término "${searchTerm}":`, error);
             throw error;
         }
     }

@@ -197,16 +197,24 @@ const AppController = {
                 // Inicializar dashboard cuando se implemente
                 break;
             case CONSTANTS.VIEWS.USERS:
-                UserController.init();
+                if (typeof UserController !== 'undefined') {
+                    UserController.init();
+                }
                 break;
             case CONSTANTS.VIEWS.PERSONS:
-                PersonController.init();
+                if (typeof PersonController !== 'undefined') {
+                    PersonController.init();
+                }
                 break;
             case CONSTANTS.VIEWS.ROLES:
-                RoleController.init();
+                if (typeof RoleController !== 'undefined') {
+                    RoleController.init();
+                }
                 break;
             case CONSTANTS.VIEWS.MODULES:
-                ModuleController.init();
+                if (typeof ModuleController !== 'undefined') {
+                    ModuleController.init();
+                }
                 break;
             default:
                 console.warn(`No se encontró controlador para la vista: ${viewName}`);
