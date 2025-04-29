@@ -1,21 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Data.Interfaces;
 using Entity.Contexts;
+using Entity.Interfaces;
 using Entity.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Data
 {
-    public class PersonData
+    public class PersonData : ActivacionDataBase<Person>, IActivacionData<Person, int>
     {
-        private readonly ApplicationDbContext _context;
         private readonly ILogger<PersonData> _logger;
 
-        public PersonData(ApplicationDbContext context, ILogger<PersonData> logger)
+        public PersonData(ApplicationDbContext context, ILogger<PersonData> logger) : base(context)
         {
-            _context = context;
             _logger = logger;
         }
 
@@ -24,7 +24,7 @@ namespace Data
             return await _context.Set<Person>().ToListAsync();
         }
 
-        public async Task<Person?> GetByIdAsync(int id)
+        public override async Task<Person> ObtenerPorIdAsync(int id)
         {
             try
             {
@@ -32,7 +32,7 @@ namespace Data
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error al obtener persona con ID {id}");
+                _logger.LogError($"Error al obtener persona con ID {id}: {ex.Message}");
                 throw;
             }
         }

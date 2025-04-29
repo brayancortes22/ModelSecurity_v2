@@ -1,13 +1,14 @@
 ﻿using Business;
-using Data;
-using Entity.DTOautogestion;
+using Business.Interfaces;
+using Entity.DTOs;
+using Entity.Model;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Utilities.Exceptions;
-using ValidationException = Utilities.Exceptions.ValidationException;
+using Web.Controllers.Base;
 
 namespace Web.Controllers
 {
@@ -17,9 +18,9 @@ namespace Web.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Produces("application/json")]
-    public class PersonController : ControllerBase
+    public class PersonController : ActivacionControllerBase<Person>
     {
-        private readonly PersonBusiness _PersonBusiness;
+        private readonly PersonBusiness _personBusiness;
         private readonly ILogger<PersonController> _logger;
 
         /// <summary>
@@ -28,8 +29,9 @@ namespace Web.Controllers
         /// <param name="personBusiness">Capa de negocio de personas</param>
         /// <param name="logger">Logger para registro de eventos</param>
         public PersonController(PersonBusiness personBusiness, ILogger<PersonController> logger)
+            : base(personBusiness)
         {
-            _PersonBusiness = personBusiness;
+            _personBusiness = personBusiness;
             _logger = logger;
         }
 
@@ -46,7 +48,7 @@ namespace Web.Controllers
         {
             try
             {
-                var persons = await _PersonBusiness.GetAllPersonsAsync();
+                var persons = await _personBusiness.GetAllPersonsAsync();
                 return Ok(persons);
             }
             catch (ExternalServiceException ex)
@@ -74,7 +76,7 @@ namespace Web.Controllers
         {
             try
             {
-                var person = await _PersonBusiness.GetPersonByIdAsync(id);
+                var person = await _personBusiness.GetPersonByIdAsync(id);
                 return Ok(person);
             }
             catch (Utilities.Exceptions.ValidationException ex)
@@ -110,7 +112,7 @@ namespace Web.Controllers
         {
             try
             {
-                var createdPerson = await _PersonBusiness.CreatePersonAsync(personDto);
+                var createdPerson = await _personBusiness.CreatePersonAsync(personDto);
                 return CreatedAtAction(nameof(GetPersonById), new { id = createdPerson.Id }, createdPerson);
             }
             catch (ValidationException ex)
@@ -144,7 +146,7 @@ namespace Web.Controllers
              // Opcional: if (!ModelState.IsValid) return BadRequest(ModelState);
             try
             {
-                var updatedPerson = await _PersonBusiness.UpdatePersonAsync(id, personDto);
+                var updatedPerson = await _personBusiness.UpdatePersonAsync(id, personDto);
                 return Ok(updatedPerson);
             }
             catch (ValidationException ex)
@@ -188,7 +190,7 @@ namespace Web.Controllers
         {
             try
             {
-                var patchedPerson = await _PersonBusiness.PatchPersonAsync(id, personDto);
+                var patchedPerson = await _personBusiness.PatchPersonAsync(id, personDto);
                 return Ok(patchedPerson);
             }
             catch (ValidationException ex)
@@ -231,7 +233,7 @@ namespace Web.Controllers
         {
             try
             {
-                await _PersonBusiness.DeletePersonAsync(id);
+                await _personBusiness.DeletePersonAsync(id);
                 return NoContent();
             }
             catch (ValidationException ex)
@@ -273,7 +275,7 @@ namespace Web.Controllers
         {
             try
             {
-                await _PersonBusiness.SoftDeletePersonAsync(id);
+                await _personBusiness.SoftDeletePersonAsync(id);
                 return NoContent();
             }
             catch (ValidationException ex)
@@ -295,6 +297,44 @@ namespace Web.Controllers
             {
                  _logger.LogError(ex, "Error inesperado al desactivar persona {PersonId}", id);
                 return StatusCode(500, new { message = "Ocurrió un error inesperado." });
+            }
+        }
+
+        /// <summary>
+        /// Reactiva una persona previamente desactivada
+        /// </summary>
+        /// <param name="id">ID de la persona a reactivar</param>
+        /// <returns>La persona reactivada</returns>
+        /// <response code="200">Retorna la persona reactivada</response>
+        /// <response code="400">ID proporcionado no válido</response>
+        /// <response code="404">Persona no encontrada</response>
+        /// <response code="500">Error interno del servidor</response>
+        [HttpPatch("{id}/reactivar")]
+        [ProducesResponseType(typeof(PersonDto), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> ReactivarPersona(int id)
+        {
+            try
+            {
+                var personaReactivada = await _personBusiness.ReactivatePersonAsync(id);
+                return Ok(personaReactivada);
+            }
+            catch (ValidationException ex)
+            {
+                _logger.LogWarning(ex, "Validación fallida al reactivar persona con ID: {PersonId}", id);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (EntityNotFoundException ex)
+            {
+                _logger.LogInformation(ex, "Persona no encontrada para reactivar con ID: {PersonId}", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al reactivar persona con ID: {PersonId}", id);
+                return StatusCode(500, new { message = ex.Message });
             }
         }
     }

@@ -1,4 +1,4 @@
-﻿using Entity.Model;
+﻿using Entity.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Entity.Model
 {
-    public class Person
+    public class Person : IActivable
     {
         public int Id { get; set; }
         public string Name { get; set; }
@@ -19,7 +19,7 @@ namespace Entity.Model
         public string Email { get; set; }
         public string TypeIdentification { get; set; }
         public int NumberIdentification { get; set; }
-        public string Signig { get; set; }
+        public bool Signig { get; set; }
         public bool Active { get; set; }
         public DateTime CreateDate { get; set; }
         public DateTime? DeleteDate { get; set; }

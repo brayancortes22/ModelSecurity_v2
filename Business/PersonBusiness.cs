@@ -1,5 +1,7 @@
-﻿using Data;
-using Entity.DTOautogestion;
+﻿using Business.Interfaces;
+using Data;
+using Data.Interfaces;
+using Entity.DTOs;
 using Entity.Model;
 using Microsoft.EntityFrameworkCore; // Para DbUpdateException
 using Microsoft.Extensions.Logging;
@@ -16,13 +18,12 @@ namespace Business
     /// <summary>
     /// Clase de negocio encargada de la lógica relacionada con las personas en el sistema.
     /// </summary>
-    public class PersonBusiness
+    public class PersonBusiness : ActivacionBusinessBase<Person>, IActivacionBusiness<Person, int>
     {
         private readonly PersonData _personData;
         private readonly ILogger<PersonBusiness> _logger;
 
         // Helper para validar email (simple)
-        // (Movido aquí para que esté disponible antes de su primer uso)
         private bool IsValidEmail(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
@@ -38,7 +39,8 @@ namespace Business
             }
         }
 
-        public PersonBusiness(PersonData personData, ILogger<PersonBusiness> logger)
+        public PersonBusiness(PersonData personData, ILogger<PersonBusiness> logger) 
+            : base(personData)
         {
             _personData = personData;
             _logger = logger;
@@ -70,7 +72,7 @@ namespace Business
 
             try
             {
-                var person = await _personData.GetByIdAsync(id);
+                var person = await _personData.ObtenerPorIdAsync(id);
                 if (person == null)
                 {
                     _logger.LogInformation("No se encontró ninguna persona con ID: {PersonId}", id);
@@ -122,7 +124,7 @@ namespace Business
 
             try
             {
-                var existingPerson = await _personData.GetByIdAsync(id);
+                var existingPerson = await _personData.ObtenerPorIdAsync(id);
                 if (existingPerson == null)
                 {
                     _logger.LogInformation("No se encontró la persona con ID {PersonId} para actualizar", id);
@@ -163,7 +165,7 @@ namespace Business
 
             try
             {
-                var existingPerson = await _personData.GetByIdAsync(id);
+                var existingPerson = await _personData.ObtenerPorIdAsync(id);
                 if (existingPerson == null)
                 {
                     _logger.LogInformation("No se encontró la persona con ID {PersonId} para aplicar patch", id);
@@ -266,7 +268,7 @@ namespace Business
             }
             try
             {
-                var existingPerson = await _personData.GetByIdAsync(id);
+                var existingPerson = await _personData.ObtenerPorIdAsync(id);
                 if (existingPerson == null)
                 {
                     _logger.LogInformation("No se encontró la persona con ID {PersonId} para eliminar (persistente)", id);
@@ -312,7 +314,7 @@ namespace Business
             }
             try
             {
-                var personToDeactivate = await _personData.GetByIdAsync(id);
+                var personToDeactivate = await _personData.ObtenerPorIdAsync(id);
                 if (personToDeactivate == null)
                 {
                     _logger.LogInformation("No se encontró la persona con ID {PersonId} para desactivar (soft-delete)", id);
@@ -345,6 +347,48 @@ namespace Business
             {
                 _logger.LogError(ex, "Error general al realizar soft-delete de la persona {PersonId}", id);
                 throw new ExternalServiceException("Base de datos", $"Error al desactivar la persona con ID {id}", ex);
+            }
+        }
+
+        // Método para reactivar una persona (complementario al soft delete)
+        public async Task<PersonDto> ReactivatePersonAsync(int id)
+        {
+            if (id <= 0)
+            {
+                _logger.LogWarning("Se intentó reactivar una persona con un ID inválido: {PersonId}", id);
+                throw new Utilities.Exceptions.ValidationException("id", "El ID de la persona debe ser mayor a 0");
+            }
+            
+            try
+            {
+                bool activated = await ActivarAsync(id);
+                
+                if (!activated)
+                {
+                    _logger.LogWarning("No se pudo reactivar la persona con ID {PersonId}", id);
+                    throw new EntityNotFoundException("Person", id);
+                }
+                
+                var person = await _personData.ObtenerPorIdAsync(id);
+                
+                // Actualizar la fecha de eliminación (ponerla en null)
+                person.DeleteDate = null;
+                person.UpdateDate = DateTime.UtcNow;
+                
+                await _personData.UpdateAsync(person);
+                
+                _logger.LogInformation("Persona con ID {PersonId} reactivada exitosamente", id);
+                
+                return MapToDTO(person);
+            }
+            catch (EntityNotFoundException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al reactivar la persona con ID {PersonId}", id);
+                throw new BusinessException($"Error al reactivar la persona con ID {id}", ex);
             }
         }
 

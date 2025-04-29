@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Entity.DTOautogestion
+namespace Entity.DTOs
 {
     public class PersonDto
     {
@@ -19,8 +19,9 @@ namespace Entity.DTOautogestion
         public string Email { get; set; }
         public string TypeIdentification { get; set; }
         public int NumberIdentification { get; set; }
-        public string Signig { get; set; }
-        public bool status { get; set; }
-
+        public bool Signig { get; set; }
+        public DateTime CreateDate { get; set; }
+        public DateTime? DeleteDate { get; set; }
+        public DateTime? UpdateDate { get; set; }
     }
 }
