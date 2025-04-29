@@ -1,16 +1,14 @@
-﻿using Data;
+﻿using Business.Interfaces;
+using Data;
 using Entity.DTOs;
 using Entity.Model;
-using Microsoft.EntityFrameworkCore; // Para DbUpdateException
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations; // Para validación de Email
 using System.Linq;
-using System.Text.RegularExpressions; // Para validar Email
 using System.Threading.Tasks;
 using Utilities.Exceptions;
-using BCrypt.Net;
 
 namespace Business
 {
@@ -26,6 +24,45 @@ namespace Business
         {
             _userData = userData;
             _logger = logger;
+        }
+
+        // Método para autenticar un usuario
+        public async Task<UserDto> AuthenticateAsync(string username, string password)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+                {
+                    return null;
+                }
+
+                // Buscar usuario por nombre de usuario
+                var user = await _userData.GetByUsernameAsync(username);
+                
+                // Verificar si el usuario existe
+                if (user == null)
+                {
+                    _logger.LogWarning("Intento de autenticación fallido: usuario {Username} no encontrado", username);
+                    return null;
+                }
+
+                // Verificar si la contraseña es correcta usando BCrypt
+                bool isPasswordValid = BCrypt.Net.BCrypt.Verify(password, user.Password);
+                
+                if (!isPasswordValid)
+                {
+                    _logger.LogWarning("Intento de autenticación fallido: contraseña incorrecta para usuario {Username}", username);
+                    return null;
+                }
+
+                _logger.LogInformation("Autenticación exitosa para usuario: {Username}", username);
+                return MapToDTO(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error durante la autenticación de usuario {Username}", username);
+                throw new ExternalServiceException("Autenticación", "Error al intentar autenticar al usuario", ex);
+            }
         }
 
         // Método para obtener todos los usuarios como DTOs
@@ -402,7 +439,7 @@ namespace Business
             }
         }
 
-        // Helper para validar email (simple)
+        // Validación simple de formato de email
         private bool IsValidEmail(string email)
         {
             if (string.IsNullOrWhiteSpace(email))

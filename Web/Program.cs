@@ -2,6 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Entity.Contexts;
 using Business;
 using Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,15 +14,37 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configurar CORS
+// Configurar CORS con una política más específica
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://127.0.0.1:5500") // Origen específico del frontend
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
+});
+
+// Configurar autenticación JWT
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+            builder.Configuration["Jwt:Key"] ?? "DefaultSecretKey123!@#$%^&*()"))
+    };
 });
 
 // Configuración predeterminada para SQL Server
@@ -62,7 +88,6 @@ builder.Services.AddScoped<UserBusiness>();
 builder.Services.AddScoped<UserRolData>();
 builder.Services.AddScoped<UserRolBusiness>();
 
-
 try
 {
     var app = builder.Build();
@@ -74,10 +99,16 @@ try
         app.UseSwaggerUI();
     }
 
+    // Usar CORS antes de cualquier otro middleware
     app.UseCors("AllowAll");
+    
     // Comentamos la redirección HTTPS para permitir acceso por HTTP
     // app.UseHttpsRedirection();
+
+    // Agregamos la autenticación antes de la autorización
+    app.UseAuthentication();
     app.UseAuthorization();
+    
     app.MapControllers();
 
     app.Run();

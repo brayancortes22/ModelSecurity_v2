@@ -1,10 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Entity.Contexts;
+﻿using Entity.Contexts;
 using Entity.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Data
 {
@@ -32,7 +33,21 @@ namespace Data
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error al obtener usuario con ID{id}");
+                _logger.LogError($"Error al obtener usuario con ID {id}: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<User?> GetByUsernameAsync(string username)
+        {
+            try
+            {
+                return await _context.Set<User>()
+                    .FirstOrDefaultAsync(u => u.Username == username);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error al obtener usuario con nombre de usuario {username}: {ex.Message}");
                 throw;
             }
         }
@@ -81,7 +96,7 @@ namespace Data
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al eliminar el usuario {ex.Message}");
+                _logger.LogError($"Error al eliminar el usuario {ex.Message}");
                 return false;
             }
         }
