@@ -221,12 +221,7 @@ namespace Business
                 {
                     existingPerson.Signig = personDto.Signig; changed = true;
                 }
-                if (existingPerson.Active != personDto.Active)
-                {
-                    existingPerson.Active = personDto.Active;
-                    existingPerson.DeleteDate = personDto.Active ? (DateTime?)null : DateTime.UtcNow;
-                    changed = true;
-                }
+                
 
                 if (changed)
                 {
@@ -435,7 +430,7 @@ namespace Business
                 TypeIdentification = person.TypeIdentification,
                 NumberIdentification = person.NumberIdentification,
                 Signig = person.Signig,
-                Active = person.Active
+                
             };
         }
 
@@ -455,7 +450,7 @@ namespace Business
                 TypeIdentification = personDto.TypeIdentification,
                 NumberIdentification = personDto.NumberIdentification,
                 Signig = personDto.Signig,
-                Active = personDto.Active
+                
             };
         }
 
@@ -472,7 +467,7 @@ namespace Business
             existingPerson.TypeIdentification = personDto.TypeIdentification;
             existingPerson.NumberIdentification = personDto.NumberIdentification;
             existingPerson.Signig = personDto.Signig;
-            existingPerson.Active = personDto.Active;
+            
 
             // Actualizar DeleteDate basado en Active
             if (existingPerson.Active && existingPerson.DeleteDate.HasValue)
