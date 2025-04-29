@@ -47,7 +47,7 @@ namespace Business
 
             try
             {
-                var form = await _formData.GetByidAsync(id);
+                var form = await _formData.GetByIdAsync(id);
                 if (form == null)
                 {
                     _logger.LogInformation("No se encontró ningún formulario con ID: {FormId}", id);
@@ -108,8 +108,7 @@ namespace Business
 
             try
             {
-                // Asumiendo que el método correcto en Data es GetByIdAsync
-                var existingForm = await _formData.GetByidAsync(id);
+                var existingForm = await _formData.GetByIdAsync(id);
                 if (existingForm == null)
                 {
                     _logger.LogInformation("No se encontró el formulario con ID {FormId} para actualizar", id);
@@ -155,8 +154,7 @@ namespace Business
 
             try
             {
-                 // Asumiendo que el método correcto en Data es GetByIdAsync
-                var existingForm = await _formData.GetByidAsync(id);
+                var existingForm = await _formData.GetByIdAsync(id);
                 if (existingForm == null)
                 {
                     _logger.LogInformation("No se encontró el formulario con ID {FormId} para aplicar patch", id);
@@ -232,8 +230,7 @@ namespace Business
             }
             try
             {
-                 // Asumiendo que el método correcto en Data es GetByIdAsync
-                var existingForm = await _formData.GetByidAsync(id);
+                var existingForm = await _formData.GetByIdAsync(id);
                 if (existingForm == null)
                 {
                      _logger.LogInformation("No se encontró el formulario con ID {FormId} para eliminar", id);
@@ -278,8 +275,7 @@ namespace Business
 
              try
             {
-                 // Asumiendo que el método correcto en Data es GetByIdAsync
-                var existingForm = await _formData.GetByidAsync(id);
+                var existingForm = await _formData.GetByIdAsync(id);
                 if (existingForm == null)
                 {
                     _logger.LogInformation("No se encontró el formulario con ID {FormId} para soft-delete", id);

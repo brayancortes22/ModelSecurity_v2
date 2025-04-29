@@ -221,6 +221,51 @@ namespace Business
             }
         }
 
+        // Método para desactivar (eliminar lógicamente) una relación rol-formulario
+        public async Task SoftDeleteRolFormAsync(int id)
+        {
+            if (id <= 0)
+            {
+                _logger.LogWarning("Se intentó realizar soft-delete a una relación rol-formulario con ID inválido: {RolFormId}", id);
+                throw new Utilities.Exceptions.ValidationException("id", "El ID de la relación rol-formulario debe ser mayor a 0");
+            }
+
+            try
+            {
+                var existingRolForm = await _rolFormData.GetByIdAsync(id);
+                if (existingRolForm == null)
+                {
+                    _logger.LogInformation("No se encontró la relación rol-formulario con ID {RolFormId} para soft-delete", id);
+                    throw new EntityNotFoundException("RolForm", id);
+                }
+
+                if (!existingRolForm.Active)
+                {
+                    _logger.LogInformation("La relación rol-formulario con ID {RolFormId} ya se encuentra inactiva.", id);
+                    return; 
+                }
+
+                existingRolForm.Active = false;
+                existingRolForm.DeleteDate = DateTime.UtcNow;
+                await _rolFormData.UpdateAsync(existingRolForm); 
+                _logger.LogInformation("Relación rol-formulario con ID {RolFormId} desactivada (soft-delete) exitosamente", id);
+            }
+            catch (EntityNotFoundException)
+            {
+                throw;
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "Error de base de datos al realizar soft-delete de la relación rol-formulario con ID {RolFormId}", id);
+                throw new ExternalServiceException("Base de datos", $"Error al desactivar la relación rol-formulario con ID {id}", dbEx);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error general al realizar soft-delete de la relación rol-formulario con ID {RolFormId}", id);
+                throw new ExternalServiceException("Base de datos", $"Error al desactivar la relación rol-formulario con ID {id}", ex);
+            }
+        }
+
         // Método para validar el DTO
         private void ValidateRolForm(RolFormDto rolFormDto)
         {

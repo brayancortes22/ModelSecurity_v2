@@ -11,13 +11,14 @@ namespace Entity.Model
         public int Id { get; set; }
         public string Permission { get; set; }
         public int RolId { get; set; }
-        public Rol Rol { get; set; }
         public int FormId { get; set; }
-        public Form Form { get; set; }
-
-        // Propiedades de navegación - Eliminando colecciones incorrectas
-        // public ICollection<RolForm> RolForms { get; set; } // Auto-referencia eliminada
-        // public ICollection<FormModule> FormModules { get; set; } // Relación incorrecta eliminada
-
+        public bool Active { get; set; } = true;
+        public DateTime CreateDate { get; set; }
+        public DateTime? UpdateDate { get; set; }
+        public DateTime? DeleteDate { get; set; }
+       
+       // Propiedades de navegación
+        public Form Form { get; set; } = new Form();
+        public Rol Rol { get; set; } = new Rol();
     }
 }

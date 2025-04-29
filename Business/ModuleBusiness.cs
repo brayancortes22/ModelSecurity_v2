@@ -47,7 +47,7 @@ namespace Business
 
             try
             {
-                var module = await _moduleData.GetByidAsync(id);
+                var module = await _moduleData.GetByIdAsync(id);
                 if (module == null)
                 {
                     _logger.LogInformation("No se encontró ningún módulo con ID: {ModuleId}", id);
@@ -108,8 +108,7 @@ namespace Business
 
             try
             {
-                // Asumiendo que el método correcto en Data es GetByIdAsync
-                var existingModule = await _moduleData.GetByidAsync(id); 
+                var existingModule = await _moduleData.GetByIdAsync(id); 
                 if (existingModule == null)
                 {
                     _logger.LogInformation("No se encontró el módulo con ID {ModuleId} para actualizar", id);
@@ -152,8 +151,7 @@ namespace Business
 
             try
             {
-                 // Asumiendo que el método correcto en Data es GetByIdAsync
-                var existingModule = await _moduleData.GetByidAsync(id); 
+                var existingModule = await _moduleData.GetByIdAsync(id); 
                 if (existingModule == null)
                 {
                     _logger.LogInformation("No se encontró el módulo con ID {ModuleId} para aplicar patch", id);
@@ -215,8 +213,7 @@ namespace Business
             }
             try
             {
-                 // Asumiendo que el método correcto en Data es GetByIdAsync
-                var existingModule = await _moduleData.GetByidAsync(id); 
+                var existingModule = await _moduleData.GetByIdAsync(id); 
                 if (existingModule == null)
                 {
                      _logger.LogInformation("No se encontró el módulo con ID {ModuleId} para eliminar", id);
@@ -261,8 +258,7 @@ namespace Business
 
              try
             {
-                 // Asumiendo que el método correcto en Data es GetByIdAsync
-                var existingModule = await _moduleData.GetByidAsync(id); 
+                var existingModule = await _moduleData.GetByIdAsync(id); 
                 if (existingModule == null)
                 {
                     _logger.LogInformation("No se encontró el módulo con ID {ModuleId} para soft-delete", id);

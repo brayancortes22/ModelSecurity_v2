@@ -18,8 +18,5 @@ namespace Entity.Model
         // Propiedades de navegación
         public Person Person { get; set; }
         public ICollection<UserRol> UserRols { get; set; }
-        public ICollection<UserSede> UserSedes { get; set; }
-        public Aprendiz Aprendiz { get; set; }
-        public Instructor Instructor { get; set; }
     }
 }

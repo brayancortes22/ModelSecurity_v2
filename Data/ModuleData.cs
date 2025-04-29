@@ -24,7 +24,7 @@ namespace Data
             return await _context.Set<Module>().ToListAsync();
         }
 
-        public async Task<Module?> GetByidAsync(int id)
+        public async Task<Module?> GetByIdAsync(int id)
         {
             try
             {

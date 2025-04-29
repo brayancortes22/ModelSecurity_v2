@@ -24,7 +24,7 @@ namespace Data
             return await _context.Set<Form>().ToListAsync();
         }
 
-        public async Task<Form> GetByidAsync(int id)
+        public async Task<Form> GetByIdAsync(int id)
         {
             try
             {

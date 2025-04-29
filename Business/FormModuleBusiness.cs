@@ -236,6 +236,51 @@ namespace Business
             }
         }
 
+        // Método para desactivar (eliminar lógicamente) una relación formulario-módulo
+        public async Task SoftDeleteFormModuleAsync(int id)
+        {
+            if (id <= 0)
+            {
+                _logger.LogWarning("Se intentó realizar soft-delete a una relación formulario-módulo con ID inválido: {FormModuleId}", id);
+                throw new Utilities.Exceptions.ValidationException("id", "El ID de la relación formulario-módulo debe ser mayor a 0");
+            }
+
+            try
+            {
+                var existingRelation = await _formModuleData.GetByIdAsync(id);
+                if (existingRelation == null)
+                {
+                    _logger.LogInformation("No se encontró la relación formulario-módulo con ID {FormModuleId} para soft-delete", id);
+                    throw new EntityNotFoundException("FormModule", id);
+                }
+
+                if (!existingRelation.Active)
+                {
+                    _logger.LogInformation("La relación formulario-módulo con ID {FormModuleId} ya se encuentra inactiva.", id);
+                    return; 
+                }
+
+                existingRelation.Active = false;
+                existingRelation.DeleteDate = DateTime.UtcNow;
+                await _formModuleData.UpdateAsync(existingRelation); 
+                _logger.LogInformation("Relación formulario-módulo con ID {FormModuleId} desactivada (soft-delete) exitosamente", id);
+            }
+            catch (EntityNotFoundException)
+            {
+                throw;
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "Error de base de datos al realizar soft-delete de la relación formulario-módulo con ID {FormModuleId}", id);
+                throw new ExternalServiceException("Base de datos", $"Error al desactivar la relación formulario-módulo con ID {id}", dbEx);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error general al realizar soft-delete de la relación formulario-módulo con ID {FormModuleId}", id);
+                throw new ExternalServiceException("Base de datos", $"Error al desactivar la relación formulario-módulo con ID {id}", ex);
+            }
+        }
+
         //Funciones de mapeos 
         // Método para mapear de FormModule a FormModuleDto
         private FormModuleDto MapToDTO(FormModule formModule)

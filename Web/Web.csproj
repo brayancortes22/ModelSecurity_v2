@@ -27,7 +27,6 @@
     <ProjectReference Include="..\Business\Business.csproj" />
     <ProjectReference Include="..\Entity\Entity.csproj" />
     <ProjectReference Include="..\Utilities\Utilities.csproj" />
-    <ProjectReference Include="..\ClientAPI\src\Org.OpenAPITools\Org.OpenAPITools.csproj" />
   </ItemGroup>
 
 </Project>

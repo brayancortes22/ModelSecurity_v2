@@ -35,19 +35,10 @@ namespace Entity.Contexts
         /// Conjunto de entidades para la gestión de roles en el sistema.
         /// </summary>
         public DbSet<Rol> Rol { get; set; }
-        public DbSet<Verification> Verification { get; set; }
         public DbSet<User> User { get; set; }
         public DbSet<Person> Person { get; set; }
         public DbSet<UserRol> UserRol { get; set; }
-        public DbSet<Sede> Sede { get; set; }
-        public DbSet<UserSede> UserSede { get; set; }
-        public DbSet<Aprendiz> Aprendiz { get; set; }
-        public DbSet<Instructor> Instructor { get; set; }
-        public DbSet<Process> Process { get; set; }
-        public DbSet<Program> Program { get; set; }
-        public DbSet<InstructorProgram> InstructorProgram { get; set; }
-        public DbSet<AprendizProgram> AprendizProgram { get; set; }
-        public DbSet<AprendizProcessInstructor> AprendizProcessInstructor { get; set; }
+       
         /// <summary>
         /// Conjunto de entidades para la gestión de formularios en el sistema.
         /// </summary>
@@ -62,14 +53,6 @@ namespace Entity.Contexts
         /// </summary>
         public DbSet<FormModule> FormModule { get; set; }
         public DbSet<RolForm> RolForm { get; set; }
-        public DbSet<TypeModality> TypeModality { get; set; }
-        public DbSet<State> State { get; set; }
-        public DbSet<RegisterySofia> RegisterySofia { get; set; }
-        public DbSet<Regional> Regional { get; set; }
-        public DbSet<Center> Center { get; set; }
-        public DbSet<Enterprise> Enterprise { get; set; }
-        public DbSet<ChangeLog> ChangeLog { get; set; }
-        public DbSet<Concept> Concept { get; set; }
 
         /// <summary>
         /// Configura los modelos de la base de datos aplicando configuraciones desde ensamblados.
@@ -97,103 +80,7 @@ namespace Entity.Contexts
                 .WithMany(r => r.UserRols)
                 .HasForeignKey(ur => ur.RolId);
 
-            // Relación 1 a muchos: Sede - Center
-            modelBuilder.Entity<Sede>()
-                .HasOne(s => s.Center)
-                .WithMany(c => c.Sedes)
-                .HasForeignKey(s => s.CenterId);
-
-            // Relación muchos a muchos: User - Sede (UserSede)
-            modelBuilder.Entity<UserSede>()
-                .HasOne(us => us.User)
-                .WithMany(u => u.UserSedes)
-                .HasForeignKey(us => us.UserId);
-
-            modelBuilder.Entity<UserSede>()
-                .HasOne(us => us.Sede)
-                .WithMany(s => s.UserSedes)
-                .HasForeignKey(us => us.SedeId);
-
-            // Relación 1 a 1: Aprendiz - User
-            modelBuilder.Entity<Aprendiz>()
-                .HasOne(a => a.User)
-                .WithOne(u => u.Aprendiz)
-                .HasForeignKey<Aprendiz>(a => a.UserId);
-
-            // Relación 1 a 1: Instructor - User
-            modelBuilder.Entity<Instructor>()
-                .HasOne(i => i.User)
-                .WithOne(u => u.Instructor)
-                .HasForeignKey<Instructor>(i => i.UserId);
-
-            // Relación muchos a muchos: Aprendiz - Program (AprendizProgram)
-            modelBuilder.Entity<AprendizProgram>()
-                .HasOne(ap => ap.Aprendiz)
-                .WithMany(a => a.AprendizPrograms)
-                .HasForeignKey(ap => ap.AprendizId);
-
-            modelBuilder.Entity<AprendizProgram>()
-                .HasOne(ap => ap.Program)
-                .WithMany(p => p.AprendizPrograms)
-                .HasForeignKey(ap => ap.ProgramId);
-
-            // Relación muchos a muchos: Instructor - Program (InstructorProgram)
-            modelBuilder.Entity<InstructorProgram>()
-                .HasOne(ip => ip.Instructor)
-                .WithMany(i => i.InstructorPrograms)
-                .HasForeignKey(ip => ip.InstructorId);
-
-            modelBuilder.Entity<InstructorProgram>()
-                .HasOne(ip => ip.Program)
-                .WithMany(p => p.InstructorPrograms)
-                .HasForeignKey(ip => ip.ProgramId);
-
-            // Relación muchos a muchos compleja: AprendizProcessInstructor
-            modelBuilder.Entity<AprendizProcessInstructor>()
-                .HasOne(api => api.TypeModality)
-                .WithMany(tm => tm.AprendizProcessInstructors)
-                .HasForeignKey(api => api.TypeModalityId);
-
-            modelBuilder.Entity<AprendizProcessInstructor>()
-                .HasOne(api => api.RegisterySofia)
-                .WithMany(rs => rs.AprendizProcessInstructors)
-                .HasForeignKey(api => api.RegisterySofiaId);
-
-            modelBuilder.Entity<AprendizProcessInstructor>()
-                .HasOne(api => api.Concept)
-                .WithMany(c => c.AprendizProcessInstructors)
-                .HasForeignKey(api => api.ConceptId);
-
-            modelBuilder.Entity<AprendizProcessInstructor>()
-                .HasOne(api => api.Enterprise)
-                .WithMany(e => e.AprendizProcessInstructors)
-                .HasForeignKey(api => api.EnterpriseId);
-
-            modelBuilder.Entity<AprendizProcessInstructor>()
-                .HasOne(api => api.Process)
-                .WithMany(p => p.AprendizProcessInstructors)
-                .HasForeignKey(api => api.ProcessId);
-
-            modelBuilder.Entity<AprendizProcessInstructor>()
-                .HasOne(api => api.Aprendiz)
-                .WithMany(a => a.AprendizProcessInstructors)
-                .HasForeignKey(api => api.AprendizId);
-
-            modelBuilder.Entity<AprendizProcessInstructor>()
-                .HasOne(api => api.Instructor)
-                .WithMany(i => i.AprendizProcessInstructors)
-                .HasForeignKey(api => api.InstructorId);
-
-            modelBuilder.Entity<AprendizProcessInstructor>()
-                .HasOne(api => api.State)
-                .WithMany(s => s.AprendizProcessInstructors)
-                .HasForeignKey(api => api.StateId);
-
-            modelBuilder.Entity<AprendizProcessInstructor>()
-                .HasOne(api => api.Verification)
-                .WithMany(v => v.AprendizProcessInstructors)
-                .HasForeignKey(api => api.VerificationId);
-
+ 
             // Relación muchos a muchos: Form - Module (FormModule)
             modelBuilder.Entity<FormModule>()
                 .HasOne(fm => fm.Form)
@@ -216,12 +103,7 @@ namespace Entity.Contexts
                 .WithMany(f => f.RolForms)
                 .HasForeignKey(rf => rf.FormId);
 
-            // Relación 1 a muchos: Center - Regional
-            modelBuilder.Entity<Center>()
-                .HasOne(c => c.Regional)
-                .WithMany(r => r.Centers)
-                .HasForeignKey(c => c.RegionalId);
-
+ 
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         }
