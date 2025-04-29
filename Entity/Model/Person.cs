@@ -19,7 +19,7 @@ namespace Entity.Model
         public string Email { get; set; }
         public string TypeIdentification { get; set; }
         public int NumberIdentification { get; set; }
-        public string Signig { get; set; }
+        public string Signing { get; set; }
         public bool Active { get; set; }
         public DateTime CreateDate { get; set; }
         public DateTime? DeleteDate { get; set; }

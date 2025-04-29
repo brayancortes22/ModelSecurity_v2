@@ -217,9 +217,9 @@ namespace Business
                     if (personDto.NumberIdentification <= 0) throw new Utilities.Exceptions.ValidationException("NumberIdentification", "El NumberIdentification debe ser positivo en PATCH.");
                     existingPerson.NumberIdentification = personDto.NumberIdentification; changed = true;
                 }
-                if (existingPerson.Signig != personDto.Signig)
+                if (existingPerson.Signing != personDto.Signing)
                 {
-                    existingPerson.Signig = personDto.Signig; changed = true;
+                    existingPerson.Signing = personDto.Signing; changed = true;
                 }
                 
 
@@ -429,7 +429,7 @@ namespace Business
                 Email = person.Email,
                 TypeIdentification = person.TypeIdentification,
                 NumberIdentification = person.NumberIdentification,
-                Signig = person.Signig,
+                Signing = person.Signing,
                 
             };
         }
@@ -449,7 +449,7 @@ namespace Business
                 Email = personDto.Email,
                 TypeIdentification = personDto.TypeIdentification,
                 NumberIdentification = personDto.NumberIdentification,
-                Signig = personDto.Signig,
+                Signing = personDto.Signing,
                 
             };
         }
@@ -466,7 +466,7 @@ namespace Business
             existingPerson.Email = personDto.Email;
             existingPerson.TypeIdentification = personDto.TypeIdentification;
             existingPerson.NumberIdentification = personDto.NumberIdentification;
-            existingPerson.Signig = personDto.Signig;
+            existingPerson.Signing = personDto.Signing;
             
 
             // Actualizar DeleteDate basado en Active

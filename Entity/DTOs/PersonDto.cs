@@ -18,6 +18,6 @@ namespace Entity.DTOs
         public string Email { get; set; }
         public string TypeIdentification { get; set; }
         public int NumberIdentification { get; set; }
-        public string Signig { get; set; }
+        public string Signing { get; set; }
     }
 }

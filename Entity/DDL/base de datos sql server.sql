@@ -21,7 +21,7 @@ CREATE TABLE Person (
     Email NVARCHAR(255) UNIQUE,
     TypeIdentification VARCHAR(50) NOT NULL,
     NumberIdentification INT NOT NULL UNIQUE,
-    Signig BIT NOT NULL,
+    Signing VARCHAR(255),
     CreateDate DATETIME NOT NULL,
     DeleteDate DATETIME,
     UpdateDate DATETIME
