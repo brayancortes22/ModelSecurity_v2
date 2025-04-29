@@ -1,5 +1,5 @@
 ﻿using Data;
-using Entity.DTOautogestion;
+using Entity.DTOs;
 using Entity.Model;
 using Microsoft.EntityFrameworkCore; // Para DbUpdateException
 using Microsoft.Extensions.Logging;

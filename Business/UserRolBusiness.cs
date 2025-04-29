@@ -1,6 +1,5 @@
 ﻿using Data;
-using Entity.DTOautogestion;
-using Entity.DTOautogestion.pivote;
+using Entity.DTOs;
 using Microsoft.EntityFrameworkCore; 
 using Entity.Model;
 using Microsoft.Extensions.Logging;

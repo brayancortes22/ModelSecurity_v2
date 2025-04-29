@@ -1,6 +1,5 @@
 ﻿using Data;
-using Entity.DTOautogestion;
-using Entity.DTOautogestion.pivote;
+using Entity.DTOs;
 using Entity.Model;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
@@ -254,14 +253,6 @@ namespace Business
                     throw new EntityNotFoundException("FormModule", id);
                 }
 
-                if (!existingRelation.Active)
-                {
-                    _logger.LogInformation("La relación formulario-módulo con ID {FormModuleId} ya se encuentra inactiva.", id);
-                    return; 
-                }
-
-                existingRelation.Active = false;
-                existingRelation.DeleteDate = DateTime.UtcNow;
                 await _formModuleData.UpdateAsync(existingRelation); 
                 _logger.LogInformation("Relación formulario-módulo con ID {FormModuleId} desactivada (soft-delete) exitosamente", id);
             }

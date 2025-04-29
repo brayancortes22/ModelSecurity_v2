@@ -1,6 +1,5 @@
 ﻿using Data;
-using Entity.DTOautogestion;
-using Entity.DTOautogestion.pivote;
+using Entity.DTOs;
 using Entity.Model;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
@@ -239,14 +238,7 @@ namespace Business
                     throw new EntityNotFoundException("RolForm", id);
                 }
 
-                if (!existingRolForm.Active)
-                {
-                    _logger.LogInformation("La relación rol-formulario con ID {RolFormId} ya se encuentra inactiva.", id);
-                    return; 
-                }
-
-                existingRolForm.Active = false;
-                existingRolForm.DeleteDate = DateTime.UtcNow;
+                
                 await _rolFormData.UpdateAsync(existingRolForm); 
                 _logger.LogInformation("Relación rol-formulario con ID {RolFormId} desactivada (soft-delete) exitosamente", id);
             }

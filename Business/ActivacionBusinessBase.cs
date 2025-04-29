@@ -33,7 +33,7 @@ namespace Business
             }
             catch (Exception ex)
             {
-                throw new BusinessExceptio($"Error al activar la entidad con ID {id}: {ex.Message}", ex);
+                throw new BusinessException($"Error al activar la entidad con ID {id}: {ex.Message}", ex);
             }
         }
 
@@ -50,7 +50,7 @@ namespace Business
             }
             catch (Exception ex)
             {
-                throw new BusinessExceptio($"Error al desactivar la entidad con ID {id}: {ex.Message}", ex);
+                throw new BusinessException($"Error al desactivar la entidad con ID {id}: {ex.Message}", ex);
             }
         }
 
@@ -68,7 +68,7 @@ namespace Business
             }
             catch (Exception ex)
             {
-                throw new BusinessExceptio($"Error al cambiar el estado de activación de la entidad con ID {id}: {ex.Message}", ex);
+                throw new BusinessException($"Error al cambiar el estado de activación de la entidad con ID {id}: {ex.Message}", ex);
             }
         }
     }
