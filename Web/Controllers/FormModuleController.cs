@@ -1,7 +1,6 @@
 ﻿using Business;
 using Data;
-using Entity.DTOautogestion;
-using Entity.DTOautogestion.pivote;
+using Entity.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;

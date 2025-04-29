@@ -1,5 +1,5 @@
 using Business;
-using Entity.DTOautogestion; // Ruta correcta para UserRolDto
+using Entity.DTOs; // Ruta correcta para UserRolDto
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
