@@ -34,12 +34,12 @@ namespace Utilities.Exceptions
         /// <summary>
         /// Tipo de entidad que no se encontró.
         /// </summary>
-        public string EntityType { get; }
+        public string? EntityType { get; }
 
         /// <summary>
         /// Identificador de la entidad buscada.
         /// </summary>
-        public object EntityId { get; }
+        public object? EntityId { get; }
 
         /// <summary>
         /// Inicializa una nueva instancia de <see cref="EntityNotFoundException"/> con un mensaje personalizado.
@@ -47,6 +47,8 @@ namespace Utilities.Exceptions
         /// <param name="message">El mensaje que describe el error.</param>
         public EntityNotFoundException(string message) : base(message)
         {
+            EntityType = null;
+            EntityId = null;
         }
 
         /// <summary>
@@ -83,7 +85,7 @@ namespace Utilities.Exceptions
         /// <summary>
         /// Campo que no cumple con la validación.
         /// </summary>
-        public string PropertyName { get; }
+        public string? PropertyName { get; }
 
         /// <summary>
         /// Inicializa una nueva instancia de <see cref="ValidationException"/> con un mensaje de error.
@@ -91,7 +93,9 @@ namespace Utilities.Exceptions
         /// <param name="message">El mensaje que describe el error de validación.</param>
         public ValidationException(string message) : base(message)
         {
+            PropertyName = null;
         }
+        
 
         /// <summary>
         /// Inicializa una nueva instancia de <see cref="ValidationException"/> con información del campo inválido.
@@ -122,7 +126,7 @@ namespace Utilities.Exceptions
         /// <summary>
         /// Código que identifica la regla de negocio violada.
         /// </summary>
-        public string RuleCode { get; }
+        public string RuleCode { get; } = string.Empty;
 
         /// <summary>
         /// Inicializa una nueva instancia de <see cref="BusinessRuleViolationException"/> con un mensaje de error.
@@ -130,7 +134,9 @@ namespace Utilities.Exceptions
         /// <param name="message">El mensaje que describe la violación de la regla de negocio.</param>
         public BusinessRuleViolationException(string message) : base(message)
         {
+            RuleCode = string.Empty;
         }
+        
 
         /// <summary>
         /// Inicializa una nueva instancia de <see cref="BusinessRuleViolationException"/> con un código de regla.
@@ -161,12 +167,12 @@ namespace Utilities.Exceptions
         /// <summary>
         /// Recurso al que se intentó acceder.
         /// </summary>
-        public string Resource { get; }
+        public string Resource { get; } = string.Empty;
 
         /// <summary>
         /// Tipo de operación que se intentó realizar.
         /// </summary>
-        public string Operation { get; }
+        public string Operation { get; } = string.Empty;
 
         /// <summary>
         /// Inicializa una nueva instancia de <see cref="UnauthorizedAccessBusinessException"/> con un mensaje de error.
@@ -206,7 +212,7 @@ namespace Utilities.Exceptions
         /// <summary>
         /// Nombre del servicio externo que generó el error.
         /// </summary>
-        public string ServiceName { get; }
+        public string ServiceName { get; } = string.Empty;
 
         /// <summary>
         /// Inicializa una nueva instancia de <see cref="ExternalServiceException"/> con un mensaje de error.

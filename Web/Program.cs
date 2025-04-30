@@ -7,8 +7,21 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Http; // Agregado para PathString
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Añade esto después de var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    // Configura el servidor para escuchar en puertos alternativos
+    serverOptions.ListenAnyIP(7009, listenOptions => {
+        listenOptions.UseHttps();
+    });
+    serverOptions.ListenAnyIP(5188, listenOptions => {
+        listenOptions.UseHttps();
+    });
+});
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -122,6 +135,9 @@ try
 {
     var app = builder.Build();
 
+    // Configurar el path base para la aplicación - DEBE ir PRIMERO en el pipeline
+    app.UsePathBase(new PathString(""));
+
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
     {
@@ -135,16 +151,16 @@ try
         });
         
         // Imprimir las rutas de Swagger en la consola
-        Console.WriteLine("Swagger disponible en:");
-        Console.WriteLine("https://localhost:7008/swagger");
-        Console.WriteLine("http://localhost:5187/swagger");
+       // Por estas
+Console.WriteLine("Swagger disponible en:");
+Console.WriteLine("https://localhost:7009/swagger");
+Console.WriteLine("https://localhost:5188/swagger");
     }
 
     // Usar CORS antes de otros middlewares
     app.UseCors("AllowAll");
     
-    // Comentamos la redirección HTTPS para permitir acceso por HTTP en desarrollo
-    // app.UseHttpsRedirection();
+    app.UseHttpsRedirection();
 
     // Agregamos la autenticación antes de la autorización
     app.UseAuthentication();
