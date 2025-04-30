@@ -1,8 +1,13 @@
-﻿using Data;
+﻿using Business.Interfaces;
+using Data;
 using Entity.DTOs;
 using Entity.Model;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.ComponentModel.DataAnnotations;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Utilities.Exceptions;
 
 namespace Business
@@ -306,6 +311,53 @@ namespace Business
             {
                  _logger.LogError(ex, "Error general al realizar soft-delete del formulario con ID {FormId}", id);
                  throw new ExternalServiceException("Base de datos", $"Error al desactivar el formulario con ID {id}", ex);
+            }
+        }
+
+        // Método para activar un formulario
+        public async Task ActivateFormAsync(int id)
+        {
+            if (id <= 0)
+            {
+                _logger.LogWarning("Se intentó activar un usuario con un ID invalido: {UserId}", id);
+                throw new Utilities.Exceptions.ValidationException("id", "El ID del usuario debe ser mayor a 0");
+            }
+            try
+            {
+                var formToActivate = await _formData.GetByIdAsync(id);
+                if (formToActivate == null)
+                {
+                    _logger.LogInformation("No se encontró el formulario con ID {FormId} para activar", id);
+                    throw new EntityNotFoundException("Form", id);
+                }
+
+                if (formToActivate.Active)
+                {
+                    _logger.LogInformation("El formulario con ID {FormId} ya está activo.", id);
+                    return;
+                }
+
+                formToActivate.Active = true;
+                // Considerar limpiar DeleteDate y actualizar UpdateDate si existen
+                // formToActivate.DeleteDate = null;
+                // formToActivate.UpdateDate = DateTime.UtcNow;
+                await _formData.UpdateAsync(formToActivate);
+
+                _logger.LogInformation("Usuario con ID {UserId} marcado como activo.", id);
+            }
+            catch (EntityNotFoundException)
+            {
+                throw;
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "Error de base de datos al activar formulario {FormId}", id);
+                throw new ExternalServiceException("Base de datos", $"Error al activar el formulario con ID {id}", dbEx);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error general al activar formulario {FormId}", id);
+                throw new ExternalServiceException("Base de datos", $"Error al activar el formulario con ID {id}", ex);
             }
         }
 

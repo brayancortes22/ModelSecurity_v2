@@ -1,8 +1,13 @@
-﻿using Data;
+﻿using Business.Interfaces;
+using Data;
 using Entity.DTOs;
 using Entity.Model;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.ComponentModel.DataAnnotations;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Utilities.Exceptions;
 
 namespace Business
@@ -291,6 +296,55 @@ namespace Business
                  throw new ExternalServiceException("Base de datos", $"Error al desactivar el módulo con ID {id}", ex);
             }
         }
+
+        // Método para activar un módulo (restaurar)
+        public async Task ActivateModuleAsync(int id)
+        {
+            if (id <= 0)
+            {
+                _logger.LogWarning("Se intentó activar un usuario con un ID invalido: {UserId}", id);
+                throw new Utilities.Exceptions.ValidationException("id", "El ID del usuario debe ser mayor a 0");
+            }
+            try
+            {
+                var moduleToActivate = await _moduleData.GetByIdAsync(id);
+                if (moduleToActivate == null)
+                {
+                    _logger.LogInformation("No se encontró el módulo con ID {ModuleId} para activar", id);
+                    throw new EntityNotFoundException("Module", id);
+                }
+
+                if (moduleToActivate.Active)
+                {
+                    _logger.LogInformation("El módulo con ID {ModuleId} ya está activo.", id);
+                    return;
+                }
+
+                moduleToActivate.Active = true;
+
+                // Considerar limpiar DeleteDate y actualizar UpdateDate si existen
+                // moduleToActivate.DeleteDate = null;
+                moduleToActivate.UpdateDate = DateTime.UtcNow;
+                await _moduleData.UpdateAsync(moduleToActivate);
+
+                _logger.LogInformation("Usuario con ID {UserId} marcado como activo.", id);
+            }
+            catch (EntityNotFoundException)
+            {
+                throw;
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "Error de base de datos al activar formulario {FormId}", id);
+                throw new ExternalServiceException("Base de datos", $"Error al activar el formulario con ID {id}", dbEx);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error general al activar formulario {FormId}", id);
+                throw new ExternalServiceException("Base de datos", $"Error al activar el formulario con ID {id}", ex);
+            }
+        }
+
 
         //Funciones de mapeos 
         // Método para mapear de Module a ModuleDto

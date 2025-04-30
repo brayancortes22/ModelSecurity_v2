@@ -18,7 +18,7 @@ namespace Business
     /// <summary>
     /// Clase de negocio encargada de la lógica relacionada con las personas en el sistema.
     /// </summary>
-    public class PersonBusiness : ActivacionBusinessBase<Person>, IActivacionBusiness<Person, int>
+    public class PersonBusiness
     {
         private readonly PersonData _personData;
         private readonly ILogger<PersonBusiness> _logger;
@@ -39,8 +39,7 @@ namespace Business
             }
         }
 
-        public PersonBusiness(PersonData personData, ILogger<PersonBusiness> logger) 
-            : base(personData)
+        public PersonBusiness(PersonData personData, ILogger<PersonBusiness> logger)
         {
             _personData = personData;
             _logger = logger;
@@ -72,7 +71,7 @@ namespace Business
 
             try
             {
-                var person = await _personData.ObtenerPorIdAsync(id);
+                var person = await _personData.GetByIdAsync(id);
                 if (person == null)
                 {
                     _logger.LogInformation("No se encontró ninguna persona con ID: {PersonId}", id);
@@ -124,7 +123,7 @@ namespace Business
 
             try
             {
-                var existingPerson = await _personData.ObtenerPorIdAsync(id);
+                var existingPerson = await _personData.GetByIdAsync(id);
                 if (existingPerson == null)
                 {
                     _logger.LogInformation("No se encontró la persona con ID {PersonId} para actualizar", id);
@@ -165,7 +164,7 @@ namespace Business
 
             try
             {
-                var existingPerson = await _personData.ObtenerPorIdAsync(id);
+                var existingPerson = await _personData.GetByIdAsync(id);
                 if (existingPerson == null)
                 {
                     _logger.LogInformation("No se encontró la persona con ID {PersonId} para aplicar patch", id);
@@ -263,7 +262,7 @@ namespace Business
             }
             try
             {
-                var existingPerson = await _personData.ObtenerPorIdAsync(id);
+                var existingPerson = await _personData.GetByIdAsync(id);
                 if (existingPerson == null)
                 {
                     _logger.LogInformation("No se encontró la persona con ID {PersonId} para eliminar (persistente)", id);
@@ -309,7 +308,7 @@ namespace Business
             }
             try
             {
-                var personToDeactivate = await _personData.ObtenerPorIdAsync(id);
+                var personToDeactivate = await _personData.GetByIdAsync(id);
                 if (personToDeactivate == null)
                 {
                     _logger.LogInformation("No se encontró la persona con ID {PersonId} para desactivar (soft-delete)", id);
@@ -345,45 +344,50 @@ namespace Business
             }
         }
 
-        // Método para reactivar una persona (complementario al soft delete)
-        public async Task<PersonDto> ReactivatePersonAsync(int id)
+        // Método para activar un módulo (restaurar)
+        public async Task ActivatePersonAsync(int id)
         {
             if (id <= 0)
             {
-                _logger.LogWarning("Se intentó reactivar una persona con un ID inválido: {PersonId}", id);
-                throw new Utilities.Exceptions.ValidationException("id", "El ID de la persona debe ser mayor a 0");
+                _logger.LogWarning("Se intentó activar un usuario con un ID invalido: {UserId}", id);
+                throw new Utilities.Exceptions.ValidationException("id", "El ID del usuario debe ser mayor a 0");
             }
-            
             try
             {
-                bool activated = await ActivarAsync(id);
-                
-                if (!activated)
+                var personToActivate = await _personData.GetByIdAsync(id);
+                if (personToActivate == null)
                 {
-                    _logger.LogWarning("No se pudo reactivar la persona con ID {PersonId}", id);
+                    _logger.LogInformation("No se encontró la persona con ID {PersonId} para activar", id);
                     throw new EntityNotFoundException("Person", id);
                 }
-                
-                var person = await _personData.ObtenerPorIdAsync(id);
-                
-                // Actualizar la fecha de eliminación (ponerla en null)
-                person.DeleteDate = null;
-                person.UpdateDate = DateTime.UtcNow;
-                
-                await _personData.UpdateAsync(person);
-                
-                _logger.LogInformation("Persona con ID {PersonId} reactivada exitosamente", id);
-                
-                return MapToDTO(person);
+
+                if (personToActivate.Active)
+                {
+                    _logger.LogInformation("La persona con ID {PersonId} ya está activa.", id);
+                    return;
+                }
+
+                personToActivate.Active = true;
+                // Considerar limpiar DeleteDate y actualizar UpdateDate si existen
+                // personToActivate.DeleteDate = null;
+                // personToActivate.UpdateDate = DateTime.UtcNow;
+                await _personData.UpdateAsync(personToActivate);
+
+                _logger.LogInformation("Usuario con ID {UserId} marcado como activo.", id);
             }
             catch (EntityNotFoundException)
             {
                 throw;
             }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "Error de base de datos al activar formulario {FormId}", id);
+                throw new ExternalServiceException("Base de datos", $"Error al activar el formulario con ID {id}", dbEx);
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al reactivar la persona con ID {PersonId}", id);
-                throw new BusinessException($"Error al reactivar la persona con ID {id}", ex);
+                _logger.LogError(ex, "Error general al activar formulario {FormId}", id);
+                throw new ExternalServiceException("Base de datos", $"Error al activar el formulario con ID {id}", ex);
             }
         }
 

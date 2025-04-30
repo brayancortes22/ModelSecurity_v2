@@ -299,5 +299,47 @@ namespace Web.Controllers
              }
         }
 
+        /// <summary>
+        /// Reactiva un usuario previamente desactivado.
+        /// </summary>
+        /// <param name="id">ID del usuario a reactivar.</param>
+        /// <response code="204">Si la activación fue exitosa o ya estaba activo.</response>
+        /// <response code="400">Si el ID es inválido.</response>
+        /// <response code="404">Si no se encuentra el usuario.</response>
+        /// <response code="500">Si ocurre un error interno.</response>
+        [HttpPost("{id}/activate")] // Usar POST para acciones que cambian estado
+        [ProducesResponseType(204)]
+        [ProducesResponseType(typeof(object), 400)]
+        [ProducesResponseType(typeof(object), 404)]
+        [ProducesResponseType(typeof(object), 500)]
+        public async Task<IActionResult> ActivateRol(int id)
+        {
+            try
+            {
+                await _RolBusiness.ActivateRolAsync(id);
+                return NoContent(); // Opcionalmente podrías devolver el usuario activado (Ok(RolDto))
+            }
+            catch (ValidationException ex)
+            {
+                 _logger.LogWarning(ex, "Validación fallida al intentar activar usuario {RolId}", id);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (EntityNotFoundException ex)
+            {
+                _logger.LogInformation(ex, "Usuario no encontrado para activar con ID: {RolId}", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (ExternalServiceException ex)
+            {
+                _logger.LogError(ex, "Error de servicio externo al activar usuario {RolId}", id);
+                return StatusCode(500, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                 _logger.LogError(ex, "Error inesperado al activar usuario {RolId}", id);
+                return StatusCode(500, new { message = "Ocurrió un error inesperado." });
+            }
+        }
+
     }
 }
