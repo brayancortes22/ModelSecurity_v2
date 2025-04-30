@@ -6,46 +6,76 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-// Configurar CORS con una política más específica
+// Configuración CORS - permitir cualquier origen en desarrollo
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowAll", builder =>
     {
-        policy.WithOrigins("http://127.0.0.1:5500") // Origen específico del frontend
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
     });
 });
 
-// Configurar autenticación JWT
-builder.Services.AddAuthentication(options =>
+// Configuración mejorada de Swagger
+builder.Services.AddSwaggerGen(c =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+    c.SwaggerDoc("v1", new OpenApiInfo { 
+        Title = "ModelSecurity API", 
+        Version = "v1",
+        Description = "API para el sistema de seguridad ModelSecurity"
+    });
+    
+    // Añadir configuración para JWT Authentication en Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-            builder.Configuration["Jwt:Key"] ?? "DefaultSecretKey123!@#$%^&*()"))
-    };
+        Description = "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
 });
+
+// Configuración de autenticación JWT
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                builder.Configuration["Jwt:Key"] ?? "DefaultSecretKey123!@#$%^&*()"))
+        };
+    });
 
 // Configuración predeterminada para SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -95,14 +125,25 @@ try
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
+        app.UseSwagger(c => {
+            c.RouteTemplate = "swagger/{documentName}/swagger.json";
+        });
+        
+        app.UseSwaggerUI(c => {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "ModelSecurity API v1");
+            c.RoutePrefix = "swagger";
+        });
+        
+        // Imprimir las rutas de Swagger en la consola
+        Console.WriteLine("Swagger disponible en:");
+        Console.WriteLine("https://localhost:7008/swagger");
+        Console.WriteLine("http://localhost:5187/swagger");
     }
 
-    // Usar CORS antes de cualquier otro middleware
+    // Usar CORS antes de otros middlewares
     app.UseCors("AllowAll");
     
-    // Comentamos la redirección HTTPS para permitir acceso por HTTP
+    // Comentamos la redirección HTTPS para permitir acceso por HTTP en desarrollo
     // app.UseHttpsRedirection();
 
     // Agregamos la autenticación antes de la autorización
