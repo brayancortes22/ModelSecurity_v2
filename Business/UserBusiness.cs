@@ -27,7 +27,7 @@ namespace Business
         }
 
         // Método para autenticar un usuario
-        public async Task<UserDto> AuthenticateAsync(string username, string password)
+        public async Task<UserDto?> AuthenticateAsync(string username, string password)
         {
             try
             {
@@ -46,8 +46,8 @@ namespace Business
                     return null;
                 }
 
-                // Verificar si la contraseña es correcta usando BCrypt
-                bool isPasswordValid = BCrypt.Net.BCrypt.Verify(password, user.Password);
+                // Verificar si la contraseña es correcta (comparación directa sin encriptación)
+                bool isPasswordValid = password == user.Password;
                 
                 if (!isPasswordValid)
                 {
@@ -118,8 +118,8 @@ namespace Business
                 // Establecer siempre como activo al crear un usuario nuevo
                 user.Active = true;
 
-                // Hashear la contraseña antes de guardarla
-                user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+                // Ya no hasheamos la contraseña, se guarda en texto plano
+                // user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
                 var userCreado = await _userData.CreateAsync(user);
                 return MapToDTO(userCreado);
@@ -228,8 +228,13 @@ namespace Business
                     // Considerar lógica de DeleteDate si existiera
                 }
 
-                // NO ACTUALIZAR CONTRASEÑA AQUÍ
-                // Si se incluyera userDto.Password != null, habría que validarlo y hashearlo.
+                // Actualizar contraseña si se proporciona
+                if (!string.IsNullOrWhiteSpace(userDto.Password))
+                {
+                    existingUser.Password = userDto.Password; // Contraseña en texto plano
+                    changed = true;
+                    _logger.LogInformation("Contraseña actualizada para el usuario con ID {UserId}", id);
+                }
 
                 if (changed)
                 {
@@ -459,7 +464,7 @@ namespace Business
         }
 
         //Funciones de mapeos 
-        // Método para mapear de User a UserDto (SIN CONTRASEÑA - MODIFICADO)
+        // Método para mapear de User a UserDto (CON CONTRASEÑA - MODIFICADO)
         private UserDto MapToDTO(User user)
         {
             return new UserDto
@@ -468,9 +473,8 @@ namespace Business
                 Username = user.Username,
                 Email = user.Email,
                 Active = user.Active,
-                PersonId = user.PersonId
-                // NUNCA devolver la contraseña hasheada
-                // Password = null // Explícitamente null o simplemente omitir
+                PersonId = user.PersonId,
+                Password = user.Password // Ahora incluimos la contraseña en texto plano
             };
         }
 
@@ -488,15 +492,20 @@ namespace Business
             };
         }
 
-        // Método para mapear de DTO a una entidad existente (para actualización PUT/PATCH - SIN CONTRASEÑA - NUEVO)
+        // Método para mapear de DTO a una entidad existente (para actualización PUT/PATCH - CON CONTRASEÑA - MODIFICADO)
         private User MapToEntity(UserDto userDto, User existingUser)
         {
             existingUser.Username = userDto.Username;
             existingUser.Email = userDto.Email;
             existingUser.PersonId = userDto.PersonId;
             existingUser.Active = userDto.Active;
-            // NO mapear la contraseña aquí para evitar sobrescribirla accidentalmente.
-            // El cambio de contraseña debe ser un proceso separado.
+            
+            // Ahora también actualizamos la contraseña si se proporciona
+            if (!string.IsNullOrWhiteSpace(userDto.Password))
+            {
+                existingUser.Password = userDto.Password;
+            }
+            
             return existingUser;
         }
 
