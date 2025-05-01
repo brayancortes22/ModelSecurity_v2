@@ -176,7 +176,7 @@ namespace Business
         }
 
         // Método para actualizar parcialmente un usuario (PATCH)
-        public async Task<UserDto> PatchUserAsync(int id, UserDto userDto) // Idealmente usar JsonPatchDocument
+        public async Task<UserDto> PatchUserAsync(int id, UserDto userDto)
         {
             if (id <= 0 || (userDto.Id != 0 && id != userDto.Id))
             {
@@ -195,51 +195,66 @@ namespace Business
 
                 bool changed = false;
 
-                // Actualizar Username si se proporciona y es diferente
-                if (userDto.Username != null && existingUser.Username != userDto.Username)
+                // Si el objeto solo contiene un ID y una contraseña, estamos en el caso de cambio de contraseña
+                bool isPasswordChangeOnly = 
+                    !string.IsNullOrEmpty(userDto.Password) && 
+                    string.IsNullOrEmpty(userDto.Username) && 
+                    string.IsNullOrEmpty(userDto.Email) && 
+                    userDto.PersonId == 0;
+
+                if (isPasswordChangeOnly)
                 {
-                    if (string.IsNullOrWhiteSpace(userDto.Username))
-                        throw new Utilities.Exceptions.ValidationException("Username", "El Username no puede estar vacío en PATCH.");
-                    existingUser.Username = userDto.Username;
+                    // Actualizar solo la contraseña sin validar otros campos
+                    _logger.LogInformation("Aplicando PATCH solo para contraseña del usuario {UserId}", id);
+                    existingUser.Password = userDto.Password;
                     changed = true;
                 }
-
-                // Actualizar Email si se proporciona y es diferente
-                if (userDto.Email != null && existingUser.Email != userDto.Email)
+                else
                 {
-                    if (string.IsNullOrWhiteSpace(userDto.Email) || !IsValidEmail(userDto.Email))
-                        throw new Utilities.Exceptions.ValidationException("Email", "El Email proporcionado no es válido en PATCH.");
-                    existingUser.Email = userDto.Email;
-                    changed = true;
-                }
+                    // Actualización normal de campos individuales
+                    // Actualizar Username si se proporciona y es diferente
+                    if (!string.IsNullOrEmpty(userDto.Username) && existingUser.Username != userDto.Username)
+                    {
+                        if (string.IsNullOrWhiteSpace(userDto.Username))
+                            throw new Utilities.Exceptions.ValidationException("Username", "El Username no puede estar vacío en PATCH.");
+                        existingUser.Username = userDto.Username;
+                        changed = true;
+                    }
 
-                // Actualizar PersonId si se proporciona y es diferente
-                if (userDto.PersonId > 0 && existingUser.PersonId != userDto.PersonId) // Asumir PersonId > 0 es válido
-                {
-                    existingUser.PersonId = userDto.PersonId;
-                    changed = true;
-                }
+                    // Actualizar Email si se proporciona y es diferente
+                    if (!string.IsNullOrEmpty(userDto.Email) && existingUser.Email != userDto.Email)
+                    {
+                        if (string.IsNullOrWhiteSpace(userDto.Email) || !IsValidEmail(userDto.Email))
+                            throw new Utilities.Exceptions.ValidationException("Email", "El Email proporcionado no es válido en PATCH.");
+                        existingUser.Email = userDto.Email;
+                        changed = true;
+                    }
 
-                // Actualizar Active si es diferente
-                if (existingUser.Active != userDto.Active)
-                {
-                    existingUser.Active = userDto.Active;
-                    changed = true;
-                    // Considerar lógica de DeleteDate si existiera
-                }
+                    // Actualizar PersonId si se proporciona y es diferente
+                    if (userDto.PersonId > 0 && existingUser.PersonId != userDto.PersonId)
+                    {
+                        existingUser.PersonId = userDto.PersonId;
+                        changed = true;
+                    }
 
-                // Actualizar contraseña si se proporciona
-                if (!string.IsNullOrWhiteSpace(userDto.Password))
-                {
-                    existingUser.Password = userDto.Password; // Contraseña en texto plano
-                    changed = true;
-                    _logger.LogInformation("Contraseña actualizada para el usuario con ID {UserId}", id);
+                    // Actualizar Active si es diferente
+                    if (userDto.Active != existingUser.Active)
+                    {
+                        existingUser.Active = userDto.Active;
+                        changed = true;
+                    }
+
+                    // Actualizar contraseña si se proporciona y no está vacía
+                    if (!string.IsNullOrWhiteSpace(userDto.Password))
+                    {
+                        existingUser.Password = userDto.Password;
+                        changed = true;
+                        _logger.LogInformation("Contraseña actualizada para el usuario con ID {UserId}", id);
+                    }
                 }
 
                 if (changed)
                 {
-                    // Considerar actualizar UpdateDate
-                    // existingUser.UpdateDate = DateTime.UtcNow;
                     await _userData.UpdateAsync(existingUser);
                     _logger.LogInformation("Aplicado patch al usuario con ID {UserId}", id);
                 }
@@ -402,6 +417,62 @@ namespace Business
             {
                 _logger.LogError(ex, "Error general al activar usuario {UserId}", id);
                 throw new ExternalServiceException("Base de datos", $"Error al activar el usuario con ID {id}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Actualiza la contraseña de un usuario
+        /// </summary>
+        /// <param name="id">ID del usuario</param>
+        /// <param name="newPassword">Nueva contraseña</param>
+        /// <returns>Task completado cuando la operación finaliza</returns>
+        /// <exception cref="ValidationException">Si los parámetros son inválidos</exception>
+        /// <exception cref="EntityNotFoundException">Si el usuario no existe</exception>
+        /// <exception cref="ExternalServiceException">Si ocurre un error en la base de datos</exception>
+        public async Task UpdatePasswordAsync(int id, string newPassword)
+        {
+            if (id <= 0)
+            {
+                _logger.LogWarning("Se intentó actualizar la contraseña de un usuario con ID inválido: {UserId}", id);
+                throw new ValidationException("id", "El ID del usuario debe ser mayor que cero");
+            }
+
+            if (string.IsNullOrWhiteSpace(newPassword))
+            {
+                _logger.LogWarning("Se intentó actualizar la contraseña con un valor vacío para el usuario ID: {UserId}", id);
+                throw new ValidationException("newPassword", "La nueva contraseña no puede estar vacía");
+            }
+
+            try
+            {
+                var existingUser = await _userData.GetByIdAsync(id);
+                if (existingUser == null)
+                {
+                    _logger.LogInformation("No se encontró el usuario con ID {UserId} para actualizar contraseña", id);
+                    throw new EntityNotFoundException("User", id);
+                }
+
+                // Actualizar la contraseña
+                existingUser.Password = newPassword;
+                
+                // Guardar cambios
+                await _userData.UpdateAsync(existingUser);
+                
+                _logger.LogInformation("Contraseña actualizada correctamente para el usuario con ID {UserId}", id);
+            }
+            catch (EntityNotFoundException)
+            {
+                throw;
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "Error de base de datos al actualizar la contraseña del usuario {UserId}", id);
+                throw new ExternalServiceException("Base de datos", $"Error al actualizar la contraseña del usuario con ID {id}", dbEx);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error general al actualizar la contraseña del usuario {UserId}", id);
+                throw new ExternalServiceException("Base de datos", $"Error al actualizar la contraseña del usuario con ID {id}", ex);
             }
         }
 

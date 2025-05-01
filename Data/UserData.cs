@@ -77,8 +77,9 @@ namespace Data
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error al actualizar el usuario {ex.Message}");
-                return false;
+                _logger.LogError($"Error al actualizar el usuario: {ex.Message}");
+                // Relanzar la excepción para que pueda ser manejada por la capa superior
+                throw;
             }
         }
 

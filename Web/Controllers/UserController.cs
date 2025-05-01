@@ -155,12 +155,17 @@ namespace Web.Controllers
         }
 
         /// <summary>
-        /// Actualiza parcialmente un usuario existente (SIN contraseña).
+        /// Actualiza parcialmente un usuario existente.
         /// </summary>
         /// <param name="id">ID del usuario a actualizar.</param>
-        /// <param name="userDto">Datos parciales a actualizar (la contraseña será ignorada).</param>
-        /// <remarks>NOTA: Se recomienda usar JsonPatch.</remarks>
-        /// <response code="200">Retorna el usuario con los cambios aplicados (sin contraseña).</response>
+        /// <param name="userDto">Datos parciales a actualizar (incluida la contraseña si se requiere cambiar).</param>
+        /// <remarks>
+        /// Este endpoint puede usarse para actualizar la contraseña enviando solo el campo password en el body:
+        /// {
+        ///   "password": "nueva-contraseña"
+        /// }
+        /// </remarks>
+        /// <response code="200">Retorna el usuario con los cambios aplicados.</response>
         /// <response code="400">Si el ID o los datos son inválidos.</response>
         /// <response code="404">Si no se encuentra el usuario.</response>
         /// <response code="500">Si ocurre un error interno.</response>
@@ -171,11 +176,11 @@ namespace Web.Controllers
         [ProducesResponseType(typeof(object), 500)]
         public async Task<IActionResult> PatchUser(int id, [FromBody] UserDto userDto)
         {
-            // Nota: La contraseña en userDto será ignorada.
+            // Nota: Ahora manejamos correctamente la contraseña en PATCH
             try
             {
                 var patchedUser = await _UserBusiness.PatchUserAsync(id, userDto);
-                return Ok(patchedUser); // DTO no incluye contraseña
+                return Ok(patchedUser);
             }
             catch (ValidationException ex)
             {
@@ -323,6 +328,59 @@ namespace Web.Controllers
             catch (Exception ex)
             {
                  _logger.LogError(ex, "Error inesperado al activar usuario {UserId}", id);
+                return StatusCode(500, new { message = "Ocurrió un error inesperado." });
+            }
+        }
+
+        /// <summary>
+        /// Actualiza la contraseña de un usuario.
+        /// </summary>
+        /// <param name="id">ID del usuario cuya contraseña se actualizará.</param>
+        /// <param name="passwordData">Objeto con la nueva contraseña.</param>
+        /// <response code="204">Si la contraseña se actualizó correctamente.</response>
+        /// <response code="400">Si el ID es inválido o la contraseña está vacía.</response>
+        /// <response code="404">Si no se encuentra el usuario.</response>
+        /// <response code="500">Si ocurre un error interno.</response>
+        [HttpPatch("{id}/password")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(typeof(object), 400)]
+        [ProducesResponseType(typeof(object), 404)]
+        [ProducesResponseType(typeof(object), 500)]
+        public async Task<IActionResult> UpdatePassword(int id, [FromBody] UpdatePasswordDto passwordData)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(new { message = "ID de usuario inválido" });
+            }
+
+            if (string.IsNullOrWhiteSpace(passwordData?.NewPassword))
+            {
+                return BadRequest(new { message = "La nueva contraseña no puede estar vacía" });
+            }
+
+            try
+            {
+                await _UserBusiness.UpdatePasswordAsync(id, passwordData.NewPassword);
+                return NoContent();
+            }
+            catch (ValidationException ex)
+            {
+                _logger.LogWarning(ex, "Validación fallida al actualizar contraseña de usuario {UserId}", id);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (EntityNotFoundException ex)
+            {
+                _logger.LogInformation(ex, "Usuario no encontrado para actualizar contraseña con ID: {UserId}", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (ExternalServiceException ex)
+            {
+                _logger.LogError(ex, "Error de servicio externo al actualizar contraseña de usuario {UserId}", id);
+                return StatusCode(500, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado al actualizar contraseña de usuario {UserId}", id);
                 return StatusCode(500, new { message = "Ocurrió un error inesperado." });
             }
         }
