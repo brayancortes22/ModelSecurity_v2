@@ -9,15 +9,16 @@ namespace Entity.DTOs
     public class PersonDto
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public string FirstName { get; set; }
-        public string SecondName { get; set; }
-        public string FirstLastName { get; set; }
-        public string SecondLastName { get; set; }
-        public string PhoneNumber { get; set; }
-        public string Email { get; set; }
-        public string TypeIdentification { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string SecondName { get; set; } = string.Empty;
+        public string FirstLastName { get; set; } = string.Empty;
+        public string SecondLastName { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string TypeIdentification { get; set; } = string.Empty;
         public int NumberIdentification { get; set; }
-        public string Signing { get; set; }
+        public string Signing { get; set; } = string.Empty;
+        public bool Active { get; set; }
     }
 }
