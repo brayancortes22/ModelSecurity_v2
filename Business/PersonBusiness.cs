@@ -434,7 +434,7 @@ namespace Business
                 TypeIdentification = person.TypeIdentification,
                 NumberIdentification = person.NumberIdentification,
                 Signing = person.Signing,
-                
+                Active = person.Active
             };
         }
 
