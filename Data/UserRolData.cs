@@ -122,5 +122,26 @@ namespace Data
                 return false; 
             }
         }
+
+        /// <summary>
+        /// Obtiene todas las relaciones UserRol para un usuario específico
+        /// </summary>
+        /// <param name="userId">ID del usuario</param>
+        /// <returns>Lista de relaciones UserRol para el usuario indicado</returns>
+        public async Task<IEnumerable<UserRol>> GetRolesByUserIdAsync(int userId)
+        {
+            try
+            {
+                return await _context.Set<UserRol>()
+                    .Where(ur => ur.UserId == userId && ur.Active)
+                    .Include(ur => ur.Rol)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al obtener roles para el usuario con ID {userId}");
+                throw;
+            }
+        }
     }
 }

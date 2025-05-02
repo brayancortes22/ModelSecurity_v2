@@ -239,6 +239,27 @@ namespace Business
             }
         }
 
+        // Método para obtener todas las asignaciones de roles para un usuario específico
+        public async Task<IEnumerable<UserRolDto>> GetRolesByUserIdAsync(int userId)
+        {
+            if (userId <= 0)
+            {
+                _logger.LogWarning("Se intentó obtener roles con ID de usuario inválido: {UserId}", userId);
+                throw new Utilities.Exceptions.ValidationException("userId", "El ID del usuario debe ser mayor que cero");
+            }
+
+            try
+            {
+                var userRoles = await _rolUserData.GetRolesByUserIdAsync(userId);
+                return MapToDTOList(userRoles);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener roles del usuario con ID: {UserId}", userId);
+                throw new ExternalServiceException("Base de datos", $"Error al recuperar los roles para el usuario con ID {userId}", ex);
+            }
+        }
+
         //Funciones de mapeos 
         // Método para mapear de UserRol a UserRolDto
         private UserRolDto MapToDTO(UserRol rolUser)

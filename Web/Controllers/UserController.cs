@@ -21,12 +21,14 @@ namespace Web.Controllers
     {
         private readonly UserBusiness _UserBusiness;
         private readonly ILogger<UserController> _logger;
+        private readonly UserBusiness _userBusiness;
 
         /// <summary>
         /// Constructor del controlador de usuarios
-        /// </summary>
         public UserController(UserBusiness UserBusiness, ILogger<UserController> logger)
         {
+            _UserBusiness = UserBusiness;
+            _userBusiness = UserBusiness;
             _UserBusiness = UserBusiness;
             _logger = logger;
         }
@@ -382,6 +384,52 @@ namespace Web.Controllers
             {
                 _logger.LogError(ex, "Error inesperado al actualizar contraseña de usuario {UserId}", id);
                 return StatusCode(500, new { message = "Ocurrió un error inesperado." });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene los roles asignados a un usuario específico
+        /// </summary>
+        /// <param name="id">ID del usuario</param>
+        /// <returns>Lista de roles asignados al usuario</returns>
+        [HttpGet("{id}/roles")]
+        [ProducesResponseType(typeof(IEnumerable<UserRolDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<UserRolDto>>> GetUserRoles(int id)
+        {
+            try
+            {
+                // Primero verificamos si el usuario existe
+                var user = await _userBusiness.GetUserByIdAsync(id);
+                
+                // Obtenemos los roles del usuario desde el servicio de UserRol
+                var userRolBusiness = HttpContext.RequestServices.GetRequiredService<UserRolBusiness>();
+                var roles = await userRolBusiness.GetRolesByUserIdAsync(id);
+                
+                _logger.LogInformation("Se obtuvieron {Count} roles del usuario con ID {UserId}", roles.Count(), id);
+                return Ok(roles);
+            }
+            catch (EntityNotFoundException ex)
+            {
+                _logger.LogInformation(ex, "Usuario no encontrado con ID: {UserId}", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (ValidationException ex)
+            {
+                _logger.LogWarning(ex, "Validación fallida al obtener roles del usuario con ID: {UserId}", id);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ExternalServiceException ex)
+            {
+                _logger.LogError(ex, "Error de servicio externo al obtener roles del usuario con ID: {UserId}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado al obtener roles del usuario con ID: {UserId}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, 
+                    new { message = "Ocurrió un error inesperado al obtener los roles del usuario." });
             }
         }
     }
