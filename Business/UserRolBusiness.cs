@@ -73,9 +73,19 @@ namespace Business
             {
                 ValidateRolUser(rolUserDto);
                 var rolUser = MapToEntity(rolUserDto);
-                rolUser.CreateDate = DateTime.UtcNow;
+                // No necesitamos inicializar estas propiedades aquí porque ya se hacen en MapToEntity
+                // rolUser.CreateDate = DateTime.UtcNow;
+                // rolUser.Active = true;
+                
                 var rolUserCreado = await _rolUserData.CreateAsync(rolUser);
                 return MapToDTO(rolUserCreado);
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "Error de base de datos al crear rol de usuario: {UserId}, {RolId}. Mensaje: {Message}", 
+                    rolUserDto?.UserId ?? 0, rolUserDto?.RolId ?? 0, dbEx.InnerException?.Message ?? dbEx.Message);
+                throw new ExternalServiceException("Base de datos", 
+                    "Error al crear el rol de usuario. Verifique que el usuario y rol existan y que no exista ya esta asignación.", dbEx);
             }
             catch (Exception ex)
             {
@@ -248,7 +258,13 @@ namespace Business
             {
                 Id = rolUserDto.Id,
                 UserId = rolUserDto.UserId,
-                RolId = rolUserDto.RolId
+                RolId = rolUserDto.RolId,
+                Active = true, // Garantizamos que siempre se cree como activo
+                CreateDate = DateTime.UtcNow, // Inicializamos la fecha de creación
+                // No inicializamos las propiedades de navegación User y Rol
+                // para evitar problemas de referencias circulares
+                User = null,
+                Rol = null
             };
         }
 

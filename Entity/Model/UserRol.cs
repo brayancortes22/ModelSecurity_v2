@@ -18,8 +18,9 @@ namespace Entity.Model
         public DateTime? DeleteDate { get; set; }
         public DateTime? UpdateDate { get; set; }
 
-        // Propiedades de navegación
-        public User User { get; set; } = new User();
-        public Rol Rol { get; set; } = new Rol();
+        // Propiedades de navegación - cambiamos la inicialización
+        // para evitar problemas de referencia circular
+        public User? User { get; set; }
+        public Rol? Rol { get; set; }
     }
 }
