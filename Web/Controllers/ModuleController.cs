@@ -260,7 +260,7 @@ namespace Web.Controllers
             }
         }
 
-          /// <summary>
+        /// <summary>
         /// Reactiva un usuario previamente desactivado.
         /// </summary>
         /// <param name="id">ID del usuario a reactivar.</param>
@@ -302,5 +302,50 @@ namespace Web.Controllers
             }
         }
 
+        /// <summary>
+        /// Obtiene los formularios asignados a un módulo específico
+        /// </summary>
+        /// <param name="id">ID del módulo</param>
+        /// <returns>Lista de asignaciones de formularios al módulo</returns>
+        [HttpGet("{id}/forms")]
+        [ProducesResponseType(typeof(IEnumerable<FormModuleDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<FormModuleDto>>> GetModuleForms(int id)
+        {
+            try
+            {
+                // Primero verificamos si el módulo existe
+                var module = await _ModuleBusiness.GetModuleByIdAsync(id);
+                
+                // Obtenemos los formularios del módulo desde el servicio de FormModule
+                var formModuleBusiness = HttpContext.RequestServices.GetRequiredService<FormModuleBusiness>();
+                var forms = await formModuleBusiness.GetFormsByModuleIdAsync(id);
+                
+                _logger.LogInformation("Se obtuvieron {Count} formularios del módulo con ID {ModuleId}", forms.Count(), id);
+                return Ok(forms);
+            }
+            catch (EntityNotFoundException ex)
+            {
+                _logger.LogInformation(ex, "Módulo no encontrado con ID: {ModuleId}", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (ValidationException ex)
+            {
+                _logger.LogWarning(ex, "Validación fallida al obtener formularios del módulo con ID: {ModuleId}", id);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ExternalServiceException ex)
+            {
+                _logger.LogError(ex, "Error de servicio externo al obtener formularios del módulo con ID: {ModuleId}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado al obtener formularios del módulo con ID: {ModuleId}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, 
+                    new { message = "Ocurrió un error inesperado al obtener los formularios del módulo." });
+            }
+        }
     }
 }

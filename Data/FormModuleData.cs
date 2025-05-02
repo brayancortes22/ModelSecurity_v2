@@ -85,5 +85,26 @@ namespace Data
                 return false;
             }
         }
+
+        /// <summary>
+        /// Obtiene todas las relaciones FormModule para un módulo específico
+        /// </summary>
+        /// <param name="moduleId">ID del módulo</param>
+        /// <returns>Lista de relaciones FormModule para el módulo indicado</returns>
+        public async Task<IEnumerable<FormModule>> GetFormsByModuleIdAsync(int moduleId)
+        {
+            try
+            {
+                return await _context.Set<FormModule>()
+                    .Where(fm => fm.ModuleId == moduleId && fm.StatusProcedure == "true")
+                    .Include(fm => fm.Form)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al obtener formularios para el módulo con ID {moduleId}");
+                throw;
+            }
+        }
     }
 }

@@ -277,6 +277,27 @@ namespace Business
             }
         }
 
+        // Método para obtener todos los formularios asignados a un módulo específico
+        public async Task<IEnumerable<FormModuleDto>> GetFormsByModuleIdAsync(int moduleId)
+        {
+            if (moduleId <= 0)
+            {
+                _logger.LogWarning("Se intentó obtener formularios con ID de módulo inválido: {ModuleId}", moduleId);
+                throw new Utilities.Exceptions.ValidationException("moduleId", "El ID del módulo debe ser mayor que cero");
+            }
+
+            try
+            {
+                var moduleForms = await _formModuleData.GetFormsByModuleIdAsync(moduleId);
+                return MapToDTOList(moduleForms);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener formularios del módulo con ID: {ModuleId}", moduleId);
+                throw new ExternalServiceException("Base de datos", $"Error al recuperar los formularios para el módulo con ID {moduleId}", ex);
+            }
+        }
+
         //Funciones de mapeos 
         // Método para mapear de FormModule a FormModuleDto
         private FormModuleDto MapToDTO(FormModule formModule)
