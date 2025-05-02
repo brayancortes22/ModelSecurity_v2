@@ -373,6 +373,7 @@ namespace Business
                 Cuestion = form.Cuestion,
                 TypeCuestion = form.TypeCuestion,
                 Answer = form.Answer,
+                Route = form.Route,
                 Active = form.Active
             };
         }
@@ -388,6 +389,7 @@ namespace Business
                 Cuestion = formDto.Cuestion,
                 TypeCuestion = formDto.TypeCuestion,
                 Answer = formDto.Answer,
+                Route = formDto.Route,
                 Active = formDto.Active
             };
         }

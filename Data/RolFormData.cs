@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Entity.Contexts;
 using Entity.Model;
+using Entity.DTOs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -107,6 +108,39 @@ namespace Data
             {
                 Console.WriteLine($"Error al eliminar el rol {ex.Message}");
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Obtiene todos los formularios asignados a un rol específico
+        /// </summary>
+        /// <param name="rolId">ID del rol</param>
+        /// <returns>Lista de formularios asignados al rol</returns>
+        public async Task<IEnumerable<FormDto>> GetFormsByRolIdAsync(int rolId)
+        {
+            try
+            {
+                // Obtenemos los formularios asignados al rol a través de la relación RolForm
+                var formDtos = await _context.RolForm
+                    .Where(rf => rf.RolId == rolId)
+                    .Join(_context.Form,
+                          rf => rf.FormId,
+                          form => form.Id,
+                          (rf, form) => new FormDto
+                          {
+                              Id = form.Id,
+                              Name = form.Name,
+                              Route = form.Route,
+                              Active = form.Active
+                          })
+                    .ToListAsync();
+
+                return formDtos;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener formularios para el rol con ID: {RolId}", rolId);
+                throw; // Re-lanzamos para que sea manejada en la capa superior
             }
         }
     }

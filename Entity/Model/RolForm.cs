@@ -12,9 +12,9 @@ namespace Entity.Model
         public string Permission { get; set; }
         public int RolId { get; set; }
         public int FormId { get; set; }
-       
-       // Propiedades de navegación
-        public Form Form { get; set; } = new Form();
-        public Rol Rol { get; set; } = new Rol();
+        
+        // Propiedades de navegación - removidas las inicializaciones predeterminadas
+        public Form Form { get; set; }
+        public Rol Rol { get; set; }
     }
 }

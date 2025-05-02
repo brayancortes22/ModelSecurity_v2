@@ -68,6 +68,13 @@ namespace Business
         {
             try
             {
+                // Si no se proporciona un permiso, establecemos uno predeterminado
+                if (string.IsNullOrWhiteSpace(rolFormDto.Permission))
+                {
+                    rolFormDto.Permission = "READ"; // Valor predeterminado
+                    _logger.LogInformation("Se estableció el permiso predeterminado 'READ' para la nueva asignación rol-formulario");
+                }
+                
                 ValidateRolForm(rolFormDto);
                 var rolForm = MapToEntity(rolFormDto);
                 var rolFormCreado = await _rolFormData.CreateAsync(rolForm);

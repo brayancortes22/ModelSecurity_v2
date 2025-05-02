@@ -67,6 +67,7 @@ CREATE TABLE Form (
     Cuestion VARCHAR(MAX),
     TypeCuestion VARCHAR(255),
     Answer VARCHAR(MAX),
+    [Route] VARCHAR(255),
     Active BIT NOT NULL,
     CreateDate DATETIME NOT NULL,
     DeleteDate DATETIME NULL,

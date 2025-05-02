@@ -10,7 +10,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Utilities.Exceptions;
 
-
 namespace Business
 {
     /// <summary>
@@ -20,10 +19,12 @@ namespace Business
     {
         private readonly RolData _RolData;
         private readonly ILogger<RolBusiness> _logger;
+        private readonly RolFormData _rolFormData; // Añadido para acceder a los formularios por rol
 
-        public RolBusiness(RolData RolData, ILogger<RolBusiness> logger)
+        public RolBusiness(RolData RolData, RolFormData rolFormData, ILogger<RolBusiness> logger)
         {
             _RolData = RolData;
+            _rolFormData = rolFormData;
             _logger = logger;
         }
         
@@ -193,7 +194,6 @@ namespace Business
                  // Considera si Active debe ser actualizable via PATCH y cómo manejarlo
                  existingRol.Active = RolDto.Active;
 
-
                 await _RolData.UpdateAsync(existingRol); // Asume que no devuelve la entidad (devuelve Task o Task<bool>)
                  return MapToDTO(existingRol); // Mapea la entidad que modificamos localmente
             }
@@ -207,7 +207,6 @@ namespace Business
                 throw new ExternalServiceException("Base de datos", $"Error al aplicar patch al Rol con ID {id}", ex);
             }
         }
-
 
         // Método para eliminar un Rol (persistente)
         public async Task DeleteRolAsync(int id)
@@ -330,6 +329,45 @@ namespace Business
             }
         }
 
+        /// <summary>
+        /// Obtiene todos los formularios asignados a un rol específico
+        /// </summary>
+        /// <param name="rolId">ID del rol</param>
+        /// <returns>Lista de formularios asignados al rol</returns>
+        public async Task<IEnumerable<FormDto>> GetFormsByRolIdAsync(int rolId)
+        {
+            if (rolId <= 0)
+            {
+                _logger.LogWarning("Se intentó obtener formularios para un rol con ID inválido: {RolId}", rolId);
+                throw new Utilities.Exceptions.ValidationException("rolId", "El ID del rol debe ser mayor que cero");
+            }
+
+            try
+            {
+                // Verificar que el rol existe
+                var rol = await _RolData.GetByIdAsync(rolId);
+                if (rol == null)
+                {
+                    _logger.LogInformation("No se encontró ningún rol con ID: {RolId}", rolId);
+                    throw new EntityNotFoundException("rol", rolId);
+                }
+
+                // Obtener los formularios asignados al rol utilizando RolFormData
+                // Esto requiere inyectar el servicio RolFormData en el constructor
+                var formDtos = await _rolFormData.GetFormsByRolIdAsync(rolId);
+                
+                return formDtos;
+            }
+            catch (EntityNotFoundException)
+            {
+                throw; // Relanzar para mantener el mensaje específico
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener los formularios para el rol con ID: {RolId}", rolId);
+                throw new ExternalServiceException("Base de datos", $"Error al recuperar los formularios para el rol con ID {rolId}", ex);
+            }
+        }
 
         // Método para validar el DTO
         private void ValidateRol(RolDto RolDto)
