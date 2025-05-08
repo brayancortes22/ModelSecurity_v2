@@ -56,6 +56,124 @@ Utilizamos la **Inyección de Dependencias** para:
 3. **Mejorar** la testabilidad
 4. **Centralizar** la configuración de servicios
 
+## Implementación de Interfaces Genéricas y Flujo de Invocación
+
+### Jerarquía de Interfaces e Implementaciones
+
+Una de las optimizaciones más importantes del sistema es el uso de interfaces genéricas que establecen contratos comunes para todas las entidades. Este enfoque sigue el principio de "programar contra interfaces, no implementaciones":
+
+```
+IGenericRepository<TEntity, TId> (interfaz)
+    └── GenericRepository<TEntity, TId> (clase abstracta/base)
+        └── EntitySpecificData (implementación concreta: UserData, RolData, etc.)
+
+IGenericBusiness<TDto, TId> (interfaz)
+    └── GenericBusiness<TEntity, TDto, TId> (clase abstracta/base)
+        └── EntitySpecificBusiness (implementación concreta: UserBusiness, RolBusiness, etc.)
+```
+
+### Flujo de Invocación Genérico
+
+El flujo de invocación de métodos sigue un patrón consistente:
+
+1. **Controller**: Recibe solicitud HTTP y llama al Business correspondiente
+2. **Business (Específico)**: Puede contener métodos específicos que invocan a métodos genéricos
+3. **Business (Genérico)**: Contiene la implementación base que:
+   - Realiza validaciones comunes
+   - Realiza mapeos Entity↔DTO
+   - Invoca al Repository usando la interfaz
+4. **Repository (Específico/Genérico)**: Implementa la interfaz y accede a datos
+
+### Ejemplo Concreto con RolForm
+
+Tomemos como ejemplo el caso del manejo de `RolForm`:
+
+#### 1. Controller invoca Business específico
+
+```csharp
+// En RolFormController.cs
+public async Task<IActionResult> GetRolFormById(int id)
+{
+    try {
+        // Invoca al método específico del business
+        var rolForm = await _rolFormBusiness.GetRolFormByIdAsync(id);
+        return Ok(rolForm);
+    }
+    // Manejo de excepciones...
+}
+```
+
+#### 2. Business específico invoca método de interfaz genérica
+
+```csharp
+// En RolFormBusiness.cs (implementa IGenericBusiness<RolFormDto, int>)
+public async Task<RolFormDto> GetRolFormByIdAsync(int id)
+{
+    // El método específico delega al método genérico de la interfaz
+    return await GetByIdAsync(id);
+}
+
+// Implementación del método de la interfaz genérica
+public async Task<RolFormDto> GetByIdAsync(int id)
+{
+    // Validación, lógica de negocio, etc.
+    var entity = await _repository.GetByIdAsync(id);
+    return MapToDTO(entity);
+}
+```
+
+#### 3. Business invoca Repository a través de interfaz
+
+```csharp
+// En RolFormBusiness.cs
+// El business depende de la interfaz, no de la implementación concreta
+private readonly IGenericRepository<RolForm, int> _repository;
+
+public RolFormBusiness(IGenericRepository<RolForm, int> repository, /* otros parámetros */)
+{
+    _repository = repository;
+    // Inicialización...
+}
+
+// Luego en los métodos
+public async Task<RolFormDto> GetByIdAsync(int id)
+{
+    // Llama al repositorio a través de la interfaz
+    var entity = await _repository.GetByIdAsync(id);
+    // Mapeo y demás lógica...
+}
+```
+
+#### 4. Implementación concreta de Repository
+
+```csharp
+// En RolFormData.cs
+public class RolFormData : IGenericRepository<RolForm, int>
+{
+    // Implementa métodos de la interfaz
+    public async Task<RolForm> GetByIdAsync(int id)
+    {
+        // Implementación específica para RolForm
+        return await _context.Set<RolForm>().FindAsync(id);
+    }
+    
+    // Otros métodos requeridos por la interfaz...
+}
+```
+
+### Beneficios Clave de Este Enfoque
+
+1. **Coherencia**: Todas las entidades siguen el mismo patrón de operaciones
+2. **DRY (Don't Repeat Yourself)**: La lógica común está implementada una sola vez
+3. **Desacoplamiento**: Las capas se comunican a través de interfaces, no implementaciones concretas
+4. **Facilidad de prueba**: Las interfaces pueden ser fácilmente simuladas (mocked) en pruebas unitarias
+5. **Extensibilidad**: Las implementaciones concretas pueden agregar métodos específicos sin romper el contrato base
+
+Este diseño facilita enormemente la adición de nuevas entidades al sistema, ya que solo es necesario:
+1. Crear la entidad y su DTO
+2. Implementar las interfaces genéricas
+3. Registrar las implementaciones en el contenedor de DI
+
 ## Optimizaciones Realizadas
 
 ### 1. Repositorio Genérico
