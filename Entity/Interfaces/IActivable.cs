@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Entity.Interfaces
 {
     /// <summary>
-    /// Interfaz para entidades que pueden ser activadas o desactivadas
+    /// Interfaz para entidades que pueden activarse o desactivarse
     /// </summary>
     public interface IActivable
     {

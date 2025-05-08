@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Entity.Model
 {
-    public class UserRol : IActivable
+    public class UserRol : IEntity, IActivable, IAuditable
     {
         public int Id { get; set; }
         public int UserId { get; set; }

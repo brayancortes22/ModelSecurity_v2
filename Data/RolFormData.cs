@@ -8,13 +8,15 @@ using Entity.Model;
 using Entity.DTOs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Data.Interfaces;
 
 namespace Data
 {
-    public class RolFormData
+    public class RolFormData : IGenericRepository<RolForm, int>
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<RolFormData> _logger;
+        
         /// <summary>
         /// Constructor que recibe el contexto de la base de datos 
         /// </summary>
@@ -24,6 +26,7 @@ namespace Data
             _context = context;
             _logger = logger;
         }
+        
         /// <summary>
         /// Obtiene todos los roles almacenados en la base de datos
         /// </summary>
@@ -41,10 +44,9 @@ namespace Data
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error al obtener rol con ID{id}");
+                _logger.LogError(ex, "Error al obtener rol con ID {Id}", id);
                 throw;// Re-lanza la excepcion para que sea manejada en capas superiores
             }
-
         }
 
         /// <summary>
@@ -62,7 +64,7 @@ namespace Data
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error al crear el rol {ex.Message}");
+                _logger.LogError(ex, "Error al crear el rol: {Message}", ex.Message);
                 throw;
             }
         }
@@ -82,9 +84,53 @@ namespace Data
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error al actualizar el rol {ex.Message}");
+                _logger.LogError(ex, "Error al actualizar el rol: {Message}", ex.Message);
                 return false;
             }
+        }
+
+        // Implementación de métodos faltantes de la interfaz IGenericRepository
+        
+        /// <summary>
+        /// Actualiza parcialmente un rol existente en la base de datos
+        /// </summary>
+        public async Task<bool> PatchAsync(int id, RolForm entity)
+        {
+            try
+            {
+                var existing = await _context.Set<RolForm>().FindAsync(id);
+                if (existing == null)
+                    return false;
+
+                // Actualiza solo las propiedades que no son null en entity
+                if (!string.IsNullOrEmpty(entity.Permission))
+                    existing.Permission = entity.Permission;
+                
+                if (entity.RolId != 0)
+                    existing.RolId = entity.RolId;
+                
+                if (entity.FormId != 0)
+                    existing.FormId = entity.FormId;
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al aplicar patch al rol con ID {Id}: {Message}", id, ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Activa un rol en la base de datos (implementación básica ya que RolForm no tiene campo Active)
+        /// </summary>
+        public async Task<bool> ActivateAsync(int id)
+        {
+            // RolForm no tiene un campo 'Active', así que este método no tiene una implementación real
+            // Devuelve true para cumplir con la interfaz
+            _logger.LogWarning("ActivateAsync llamado para RolForm, pero la entidad no tiene campo Active");
+            return true;
         }
 
         /// <summary>
@@ -106,9 +152,20 @@ namespace Data
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al eliminar el rol {ex.Message}");
+                _logger.LogError(ex, "Error al eliminar el rol con ID {Id}: {Message}", id, ex.Message);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Realiza un borrado lógico (no aplicable a RolForm que no tiene campo para borrado lógico)
+        /// </summary>
+        public async Task<bool> SoftDeleteAsync(int id)
+        {
+            // RolForm no tiene un campo para borrado lógico, así que este método no tiene una implementación real
+            // Devuelve true para cumplir con la interfaz
+            _logger.LogWarning("SoftDeleteAsync llamado para RolForm, pero la entidad no tiene campo para borrado lógico");
+            return true;
         }
 
         /// <summary>

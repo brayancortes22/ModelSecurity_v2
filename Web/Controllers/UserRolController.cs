@@ -1,5 +1,6 @@
 using Business;
-using Entity.DTOs; // Ruta correcta para UserRolDto
+using Business.Interfaces;
+using Entity.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -19,15 +20,20 @@ namespace Web.Controllers
     [Produces("application/json")]
     public class UserRolController : ControllerBase
     {
-        private readonly UserRolBusiness _userRolBusiness;
+        private readonly IGenericBusiness<UserRolDto, int> _userRolBusiness;
+        private readonly UserRolBusiness _userRolBusinessSpecific;
         private readonly ILogger<UserRolController> _logger;
 
         /// <summary>
         /// Constructor del controlador UserRol.
         /// </summary>
-        public UserRolController(UserRolBusiness userRolBusiness, ILogger<UserRolController> logger)
+        public UserRolController(
+            IGenericBusiness<UserRolDto, int> userRolBusiness, 
+            UserRolBusiness userRolBusinessSpecific, 
+            ILogger<UserRolController> logger)
         {
             _userRolBusiness = userRolBusiness ?? throw new ArgumentNullException(nameof(userRolBusiness));
+            _userRolBusinessSpecific = userRolBusinessSpecific ?? throw new ArgumentNullException(nameof(userRolBusinessSpecific));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -41,7 +47,7 @@ namespace Web.Controllers
         {
             try
             {
-                var userRoles = await _userRolBusiness.GetAllRolUsersAsync();
+                var userRoles = await _userRolBusiness.GetAllAsync();
                 _logger.LogInformation("Se obtuvieron {Count} asignaciones de rol a usuario.", userRoles.Count());
                 return Ok(userRoles);
             }
@@ -74,11 +80,11 @@ namespace Web.Controllers
             }
             try
             {
-                var userRol = await _userRolBusiness.GetRolUserByIdAsync(id);
+                var userRol = await _userRolBusiness.GetByIdAsync(id);
                 _logger.LogInformation("Asignación rol-usuario con ID {UserRolId} obtenida exitosamente.", id);
                 return Ok(userRol);
             }
-            catch (ValidationException ex) // Aunque GetRolUserByIdAsync no lanza directamente ValidationException por ID<=0, lo mantenemos por si acaso.
+            catch (ValidationException ex)
             {
                 _logger.LogWarning(ex, "Validación fallida para la asignación rol-usuario con ID: {UserRolId}", id);
                 return BadRequest(new { message = ex.Message });
@@ -123,9 +129,8 @@ namespace Web.Controllers
 
             try
             {
-                var createdUserRol = await _userRolBusiness.CreateRolUserAsync(userRolDto);
+                var createdUserRol = await _userRolBusiness.CreateAsync(userRolDto);
                 _logger.LogInformation("Asignación rol-usuario creada exitosamente con ID {UserRolId}.", createdUserRol.Id);
-                // Devolver la ruta al recurso creado
                 return CreatedAtAction(nameof(GetUserRolById), new { id = createdUserRol.Id }, createdUserRol);
             }
             catch (ValidationException ex)
@@ -156,11 +161,11 @@ namespace Web.Controllers
         /// <response code="404">Asignación no encontrada.</response>
         /// <response code="500">Error interno del servidor.</response>
         [HttpPut("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)] // Cambiado de 204 a 200 para devolver el objeto actualizado
+        [ProducesResponseType(typeof(UserRolDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateUserRol(int id, [FromBody] UserRolDto userRolDto)
+        public async Task<ActionResult<UserRolDto>> UpdateUserRol(int id, [FromBody] UserRolDto userRolDto)
         {
             if (id <= 0)
             {
@@ -175,10 +180,9 @@ namespace Web.Controllers
 
             try
             {
-                // UpdateRolUserAsync ahora devuelve el DTO actualizado
-                var updatedUserRol = await _userRolBusiness.UpdateRolUserAsync(id, userRolDto);
+                var updatedUserRol = await _userRolBusiness.UpdateAsync(id, userRolDto);
                 _logger.LogInformation("Asignación rol-usuario con ID {UserRolId} actualizada exitosamente.", id);
-                return Ok(updatedUserRol); // Devolver el objeto actualizado
+                return Ok(updatedUserRol);
             }
             catch (ValidationException ex)
             {
@@ -226,11 +230,11 @@ namespace Web.Controllers
 
             try
             {
-                await _userRolBusiness.DeleteRolUserAsync(id);
+                await _userRolBusiness.DeleteAsync(id);
                 _logger.LogInformation("Asignación rol-usuario con ID {UserRolId} eliminada exitosamente.", id);
-                return NoContent(); // 204 No Content es apropiado para DELETE exitoso
+                return NoContent();
             }
-            catch (ValidationException ex) // Aunque DeleteRolUserAsync no debería lanzar ValidationException por ID<=0 aquí.
+            catch (ValidationException ex)
             {
                  _logger.LogWarning(ex, "Validación fallida al intentar eliminar asignación rol-usuario con ID: {UserRolId}", id);
                  return BadRequest(new { message = ex.Message });
@@ -238,7 +242,7 @@ namespace Web.Controllers
             catch (EntityNotFoundException ex)
             {
                 _logger.LogInformation(ex, "Asignación rol-usuario no encontrada para eliminar con ID: {UserRolId}", id);
-                return NotFound(new { message = ex.Message }); // 404 si no existe
+                return NotFound(new { message = ex.Message });
             }
             catch (ExternalServiceException ex)
             {
@@ -276,12 +280,11 @@ namespace Web.Controllers
 
             try
             {
-                // Llamar al método de negocio corregido
-                await _userRolBusiness.SoftDeleteUserRolAsync(id);
+                await _userRolBusiness.SoftDeleteAsync(id);
                 _logger.LogInformation("Borrado lógico realizado exitosamente para la asignación rol-usuario con ID {UserRolId}.", id);
-                return NoContent(); // 204 No Content indica éxito
+                return NoContent();
             }
-            catch (ValidationException ex) // Capturar si SoftDelete valida y falla (ej: ID <= 0)
+            catch (ValidationException ex)
             {
                 _logger.LogWarning(ex, "Validación fallida al intentar desactivar asignación rol-usuario con ID: {UserRolId}", id);
                 return BadRequest(new { message = ex.Message });
@@ -289,7 +292,7 @@ namespace Web.Controllers
             catch (EntityNotFoundException ex)
             {
                 _logger.LogInformation(ex, "Asignación rol-usuario no encontrada para desactivar con ID: {UserRolId}", id);
-                return NotFound(new { message = ex.Message }); // Devolver 404 si no se encuentra
+                return NotFound(new { message = ex.Message });
             }
             catch (ExternalServiceException ex)
             {
@@ -303,6 +306,104 @@ namespace Web.Controllers
             }
         }
 
-        // Nota: No se incluye endpoint para SoftDelete debido a la inconsistencia en UserRolBusiness.SoftDeleteStateAsync.
+        /// <summary>
+        /// Obtiene todos los roles asignados a un usuario específico.
+        /// </summary>
+        /// <param name="userId">ID del usuario.</param>
+        /// <returns>Lista de roles asignados al usuario.</returns>
+        /// <response code="200">Roles obtenidos exitosamente.</response>
+        /// <response code="400">ID de usuario no válido.</response>
+        /// <response code="404">Usuario no encontrado.</response>
+        /// <response code="500">Error interno del servidor.</response>
+        [HttpGet("user/{userId}/roles")]
+        [ProducesResponseType(typeof(IEnumerable<UserRolDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<UserRolDto>>> GetRolesByUserId(int userId)
+        {
+            if (userId <= 0)
+            {
+                _logger.LogWarning("Intento de obtener roles para un usuario con ID inválido: {UserId}", userId);
+                return BadRequest(new { message = "El ID de usuario proporcionado es inválido." });
+            }
+
+            try
+            {
+                var roles = await _userRolBusinessSpecific.GetRolesByUserIdAsync(userId);
+                _logger.LogInformation("Se obtuvieron {Count} roles para el usuario con ID {UserId}", roles.Count(), userId);
+                return Ok(roles);
+            }
+            catch (ValidationException ex)
+            {
+                _logger.LogWarning(ex, "Validación fallida al obtener roles del usuario con ID: {UserId}", userId);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (EntityNotFoundException ex)
+            {
+                _logger.LogInformation(ex, "Usuario no encontrado con ID: {UserId} al intentar obtener sus roles", userId);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (ExternalServiceException ex)
+            {
+                _logger.LogError(ex, "Error externo al obtener roles del usuario con ID: {UserId}", userId);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado al obtener roles del usuario con ID: {UserId}", userId);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Ocurrió un error inesperado. Por favor, intente nuevamente." });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene todos los usuarios asignados a un rol específico.
+        /// </summary>
+        /// <param name="rolId">ID del rol.</param>
+        /// <returns>Lista de usuarios asignados al rol.</returns>
+        /// <response code="200">Usuarios obtenidos exitosamente.</response>
+        /// <response code="400">ID de rol no válido.</response>
+        /// <response code="404">Rol no encontrado.</response>
+        /// <response code="500">Error interno del servidor.</response>
+        [HttpGet("rol/{rolId}/users")]
+        [ProducesResponseType(typeof(IEnumerable<UserRolDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<UserRolDto>>> GetUsersByRolId(int rolId)
+        {
+            if (rolId <= 0)
+            {
+                _logger.LogWarning("Intento de obtener usuarios para un rol con ID inválido: {RolId}", rolId);
+                return BadRequest(new { message = "El ID de rol proporcionado es inválido." });
+            }
+
+            try
+            {
+                var users = await _userRolBusinessSpecific.GetUsersByRolIdAsync(rolId);
+                _logger.LogInformation("Se obtuvieron {Count} usuarios para el rol con ID {RolId}", users.Count(), rolId);
+                return Ok(users);
+            }
+            catch (ValidationException ex)
+            {
+                _logger.LogWarning(ex, "Validación fallida al obtener usuarios del rol con ID: {RolId}", rolId);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (EntityNotFoundException ex)
+            {
+                _logger.LogInformation(ex, "Rol no encontrado con ID: {RolId} al intentar obtener sus usuarios", rolId);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (ExternalServiceException ex)
+            {
+                _logger.LogError(ex, "Error externo al obtener usuarios del rol con ID: {RolId}", rolId);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado al obtener usuarios del rol con ID: {RolId}", rolId);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Ocurrió un error inesperado. Por favor, intente nuevamente." });
+            }
+        }
     }
-} 
+}

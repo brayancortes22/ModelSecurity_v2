@@ -5,85 +5,21 @@ using Entity.Contexts;
 using Entity.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Data.Interfaces;
+using Data.Repositories;
 
 namespace Data
 {
-    public class FormModuleData
+    public class FormModuleData : GenericRepository<FormModule, int>, IGenericRepository<FormModule, int>
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<FormModuleData> _logger;
 
-        public FormModuleData(ApplicationDbContext context, ILogger<FormModuleData> logger)
+        public FormModuleData(ApplicationDbContext context, ILogger<FormModuleData> logger) 
+            : base(context, logger)
         {
             _context = context;
             _logger = logger;
-        }
-
-        public async Task<IEnumerable<FormModule>> GetAllAsync()
-        {
-            return await _context.Set<FormModule>().ToListAsync();
-        }
-
-        public async Task<FormModule?> GetByIdAsync(int id)
-        {
-            try
-            {
-                return await _context.Set<FormModule>().FindAsync(id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError( $"Error al obtener Formulario-Módulo con ID {id}");
-                throw;
-            }
-        }
-
-        public async Task<FormModule> CreateAsync(FormModule formModule)
-        {
-            try
-            {
-                await _context.Set<FormModule>().AddAsync(formModule);
-                await _context.SaveChangesAsync();
-                return formModule;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error al crear la relación Formulario-Módulo {ex.Message}");
-                throw;
-            }
-        }
-
-        public async Task<bool> UpdateAsync(FormModule formModule)
-        {
-            try
-            {
-                _context.Set<FormModule>().Update(formModule);
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error al actualizar la relación Formulario-Módulo {ex.Message}");
-                return false;
-            }
-        }
-
-        public async Task<bool> DeleteAsync(int id)
-        {
-            try
-            {
-                var formModule = await _context.Set<FormModule>().FindAsync(id);
-                if (formModule == null)
-                    return false;
-
-                _context.Set<FormModule>().Remove(formModule);
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error al eliminar la relación Formulario-Módulo {ex.Message}");
-                return false;
-            }
         }
 
         /// <summary>
@@ -96,13 +32,34 @@ namespace Data
             try
             {
                 return await _context.Set<FormModule>()
-                    .Where(fm => fm.ModuleId == moduleId && fm.StatusProcedure == "true")
+                    .Where(fm => fm.ModuleId == moduleId && fm.StatusProcedure == "true" && fm.Active)
                     .Include(fm => fm.Form)
                     .ToListAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error al obtener formularios para el módulo con ID {moduleId}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Obtiene todos los módulos asociados a un formulario específico
+        /// </summary>
+        /// <param name="formId">ID del formulario</param>
+        /// <returns>Lista de relaciones FormModule para el formulario indicado</returns>
+        public async Task<IEnumerable<FormModule>> GetModulesByFormIdAsync(int formId)
+        {
+            try
+            {
+                return await _context.Set<FormModule>()
+                    .Where(fm => fm.FormId == formId && fm.StatusProcedure == "true" && fm.Active)
+                    .Include(fm => fm.Module)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al obtener módulos para el formulario con ID {formId}");
                 throw;
             }
         }

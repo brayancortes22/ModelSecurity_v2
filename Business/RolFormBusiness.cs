@@ -1,4 +1,6 @@
 ﻿using Data;
+using Data.Interfaces;
+using Business.Interfaces;
 using Entity.DTOs;
 using Entity.Model;
 using Microsoft.Extensions.Logging;
@@ -10,23 +12,27 @@ namespace Business
     /// <summary>
     /// Clase de negocio encargada de la lógica relacionada con los roles de formulario en el sistema.
     /// </summary>
-    public class RolFormBusiness
+    public class RolFormBusiness : IGenericBusiness<RolFormDto, int>
     {
         private readonly RolFormData _rolFormData;
+        private readonly IGenericRepository<RolForm, int> _repository;
         private readonly ILogger<RolFormBusiness> _logger;
 
-        public RolFormBusiness(RolFormData rolFormData, ILogger<RolFormBusiness> logger)
+        public RolFormBusiness(RolFormData rolFormData, 
+                              IGenericRepository<RolForm, int> repository,
+                              ILogger<RolFormBusiness> logger)
         {
             _rolFormData = rolFormData;
+            _repository = repository;
             _logger = logger;
         }
 
         // Método para obtener todos los roles de formulario como DTOs
-        public async Task<IEnumerable<RolFormDto>> GetAllRolFormsAsync()
+        public async Task<IEnumerable<RolFormDto>> GetAllAsync()
         {
             try
             {
-                var rolForms = await _rolFormData.GetAllAsync();
+                var rolForms = await _repository.GetAllAsync();
                 return MapToDTOList(rolForms);
             }
             catch (Exception ex)
@@ -37,7 +43,7 @@ namespace Business
         }
 
         // Método para obtener un rol de formulario por ID como DTO
-        public async Task<RolFormDto> GetRolFormByIdAsync(int id)
+        public async Task<RolFormDto> GetByIdAsync(int id)
         {
             if (id <= 0)
             {
@@ -47,7 +53,7 @@ namespace Business
 
             try
             {
-                var rolForm = await _rolFormData.GetByIdAsync(id);
+                var rolForm = await _repository.GetByIdAsync(id);
                 if (rolForm == null)
                 {
                     _logger.LogInformation("No se encontró ningún rol de formulario con ID: {Id}", id);
@@ -64,7 +70,7 @@ namespace Business
         }
 
         // Método para crear un rol de formulario desde un DTO
-        public async Task<RolFormDto> CreateRolFormAsync(RolFormDto rolFormDto)
+        public async Task<RolFormDto> CreateAsync(RolFormDto rolFormDto)
         {
             try
             {
@@ -77,7 +83,7 @@ namespace Business
                 
                 ValidateRolForm(rolFormDto);
                 var rolForm = MapToEntity(rolFormDto);
-                var rolFormCreado = await _rolFormData.CreateAsync(rolForm);
+                var rolFormCreado = await _repository.CreateAsync(rolForm);
                 return MapToDTO(rolFormCreado);
             }
             catch (Exception ex)
@@ -88,7 +94,7 @@ namespace Business
         }
 
         // Método para actualizar una relación rol-formulario existente (reemplazo completo)
-        public async Task<RolFormDto> UpdateRolFormAsync(int id, RolFormDto rolFormDto)
+        public async Task<RolFormDto> UpdateAsync(int id, RolFormDto rolFormDto)
         {
             if (id <= 0 || id != rolFormDto.Id)
             {
@@ -99,7 +105,7 @@ namespace Business
 
             try
             {
-                var existingRolForm = await _rolFormData.GetByIdAsync(id);
+                var existingRolForm = await _repository.GetByIdAsync(id);
                 if (existingRolForm == null)
                 {
                     _logger.LogInformation("No se encontró la relación rol-formulario con ID {RolFormId} para actualizar", id);
@@ -111,7 +117,7 @@ namespace Business
                 existingRolForm.FormId = rolFormDto.FormId;
                 existingRolForm.Permission = rolFormDto.Permission;
 
-                await _rolFormData.UpdateAsync(existingRolForm);
+                await _repository.UpdateAsync(existingRolForm);
                 return MapToDTO(existingRolForm);
             }
             catch (EntityNotFoundException)
@@ -132,7 +138,7 @@ namespace Business
 
         // Método para actualizar parcialmente una relación rol-formulario (PATCH)
         // Principalmente para actualizar Permission
-        public async Task<RolFormDto> PatchRolFormAsync(int id, RolFormDto rolFormDto)
+        public async Task<RolFormDto> PatchAsync(int id, RolFormDto rolFormDto)
         {
             if (id <= 0)
             {
@@ -142,7 +148,7 @@ namespace Business
 
             try
             {
-                var existingRolForm = await _rolFormData.GetByIdAsync(id);
+                var existingRolForm = await _repository.GetByIdAsync(id);
                 if (existingRolForm == null)
                 {
                     _logger.LogInformation("No se encontró la relación rol-formulario con ID {RolFormId} para aplicar patch", id);
@@ -163,7 +169,7 @@ namespace Business
 
                 if (updated)
                 {
-                    await _rolFormData.UpdateAsync(existingRolForm);
+                    await _repository.UpdateAsync(existingRolForm);
                 }
                 else
                 {
@@ -189,7 +195,7 @@ namespace Business
         }
 
         // Método para eliminar una relación rol-formulario (DELETE persistente)
-        public async Task DeleteRolFormAsync(int id)
+        public async Task DeleteAsync(int id)
         {
             if (id <= 0)
             {
@@ -198,19 +204,15 @@ namespace Business
             }
             try
             {
-                 var existingRolForm = await _rolFormData.GetByIdAsync(id); // Verificar existencia
+                 var existingRolForm = await _repository.GetByIdAsync(id); // Verificar existencia
                 if (existingRolForm == null)
                 {
                      _logger.LogInformation("No se encontró la relación rol-formulario con ID {RolFormId} para eliminar", id);
                     throw new EntityNotFoundException("RolForm", id);
                 }
 
-                bool deleted = await _rolFormData.DeleteAsync(id);
-                if (deleted)
-                {
-                    _logger.LogInformation("Relación rol-formulario con ID {RolFormId} eliminada exitosamente", id);
-                }
-                else
+                bool deleted = await _repository.DeleteAsync(id);
+                if (!deleted)
                 {
                      _logger.LogWarning("No se pudo eliminar la relación rol-formulario con ID {RolFormId}.", id);
                     throw new EntityNotFoundException("RolForm", id); 
@@ -228,7 +230,7 @@ namespace Business
         }
 
         // Método para desactivar (eliminar lógicamente) una relación rol-formulario
-        public async Task SoftDeleteRolFormAsync(int id)
+        public async Task SoftDeleteAsync(int id)
         {
             if (id <= 0)
             {
@@ -238,7 +240,7 @@ namespace Business
 
             try
             {
-                var existingRolForm = await _rolFormData.GetByIdAsync(id);
+                var existingRolForm = await _repository.GetByIdAsync(id);
                 if (existingRolForm == null)
                 {
                     _logger.LogInformation("No se encontró la relación rol-formulario con ID {RolFormId} para soft-delete", id);
@@ -246,7 +248,7 @@ namespace Business
                 }
 
                 
-                await _rolFormData.UpdateAsync(existingRolForm); 
+                await _repository.SoftDeleteAsync(id); 
                 _logger.LogInformation("Relación rol-formulario con ID {RolFormId} desactivada (soft-delete) exitosamente", id);
             }
             catch (EntityNotFoundException)
@@ -263,6 +265,76 @@ namespace Business
                 _logger.LogError(ex, "Error general al realizar soft-delete de la relación rol-formulario con ID {RolFormId}", id);
                 throw new ExternalServiceException("Base de datos", $"Error al desactivar la relación rol-formulario con ID {id}", ex);
             }
+        }
+        
+        // Implementación del método ActivateAsync requerido por la interfaz
+        public async Task ActivateAsync(int id)
+        {
+            if (id <= 0)
+            {
+                _logger.LogWarning("Se intentó activar una relación rol-formulario con ID inválido: {RolFormId}", id);
+                throw new Utilities.Exceptions.ValidationException("id", "El ID de la relación rol-formulario debe ser mayor a 0");
+            }
+
+            try
+            {
+                var existingRolForm = await _repository.GetByIdAsync(id);
+                if (existingRolForm == null)
+                {
+                    _logger.LogInformation("No se encontró la relación rol-formulario con ID {RolFormId} para activar", id);
+                    throw new EntityNotFoundException("RolForm", id);
+                }
+
+                await _repository.ActivateAsync(id);
+                _logger.LogInformation("Relación rol-formulario con ID {RolFormId} activada exitosamente", id);
+            }
+            catch (EntityNotFoundException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al activar la relación rol-formulario con ID {RolFormId}", id);
+                throw new ExternalServiceException("Base de datos", $"Error al activar la relación rol-formulario con ID {id}", ex);
+            }
+        }
+
+        // Métodos específicos de RolFormBusiness
+        
+        // Obtener todos los roles de formulario
+        public async Task<IEnumerable<RolFormDto>> GetAllRolFormsAsync()
+        {
+            return await GetAllAsync();
+        }
+
+        // Obtener un rol de formulario específico por ID
+        public async Task<RolFormDto> GetRolFormByIdAsync(int id)
+        {
+            return await GetByIdAsync(id);
+        }
+
+        // Crear un rol de formulario
+        public async Task<RolFormDto> CreateRolFormAsync(RolFormDto rolFormDto)
+        {
+            return await CreateAsync(rolFormDto);
+        }
+
+        // Actualizar un rol de formulario
+        public async Task<RolFormDto> UpdateRolFormAsync(int id, RolFormDto rolFormDto)
+        {
+            return await UpdateAsync(id, rolFormDto);
+        }
+
+        // Actualizar parcialmente un rol de formulario
+        public async Task<RolFormDto> PatchRolFormAsync(int id, RolFormDto rolFormDto)
+        {
+            return await PatchAsync(id, rolFormDto);
+        }
+
+        // Eliminar un rol de formulario
+        public async Task DeleteRolFormAsync(int id)
+        {
+            await DeleteAsync(id);
         }
 
         // Método para validar el DTO

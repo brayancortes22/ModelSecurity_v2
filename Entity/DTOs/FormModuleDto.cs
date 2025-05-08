@@ -12,5 +12,9 @@ namespace Entity.DTOs
         public string StatusProcedure { get; set; }
         public int FormId { get; set; }
         public int ModuleId { get; set; }
+
+        //navegadores
+        public ModuleDto Module { get; set; }
+        public FormDto Form { get; set; }
     }
 }

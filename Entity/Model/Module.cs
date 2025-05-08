@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Entity.Model
 {
-    public class Module : IActivable
+    public class Module : IEntity, IActivable, IAuditable
     {
         public int Id { get; set; }
         public bool Active { get; set; }

@@ -1,13 +1,11 @@
 ﻿using Business;
-using Data;
+using Business.Interfaces;
 using Entity.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Utilities.Exceptions;
-using ValidationException = Utilities.Exceptions.ValidationException;
 
 namespace Web.Controllers
 {
@@ -19,17 +17,23 @@ namespace Web.Controllers
     [Produces("application/json")]
     public class FormModuleController : ControllerBase
     {
-        private readonly FormModuleBusiness _FormModuleBusiness;
+        private readonly IGenericBusiness<FormModuleDto, int> _genericBusiness;
+        private readonly FormModuleBusiness _formModuleBusiness;
         private readonly ILogger<FormModuleController> _logger;
 
         /// <summary>
         /// Constructor del controlador de módulos de formularios
         /// </summary>
-        /// <param name="formModuleBusiness">Capa de negocio de módulos de formularios</param>
+        /// <param name="genericBusiness">Interfaz genérica de negocio</param>
+        /// <param name="formModuleBusiness">Implementación específica de negocio</param>
         /// <param name="logger">Logger para registro de eventos</param>
-        public FormModuleController(FormModuleBusiness formModuleBusiness, ILogger<FormModuleController> logger)
+        public FormModuleController(
+            IGenericBusiness<FormModuleDto, int> genericBusiness,
+            FormModuleBusiness formModuleBusiness,
+            ILogger<FormModuleController> logger)
         {
-            _FormModuleBusiness = formModuleBusiness;
+            _genericBusiness = genericBusiness;
+            _formModuleBusiness = formModuleBusiness;
             _logger = logger;
         }
 
@@ -46,7 +50,7 @@ namespace Web.Controllers
         {
             try
             {
-                var formModules = await _FormModuleBusiness.GetAllFormModulesAsync();
+                var formModules = await _genericBusiness.GetAllAsync();
                 return Ok(formModules);
             }
             catch (ExternalServiceException ex)
@@ -74,7 +78,7 @@ namespace Web.Controllers
         {
             try
             {
-                var formModule = await _FormModuleBusiness.GetFormModuleByIdAsync(id);
+                var formModule = await _genericBusiness.GetByIdAsync(id);
                 return Ok(formModule);
             }
             catch (ValidationException ex)
@@ -110,7 +114,7 @@ namespace Web.Controllers
         {
             try
             {
-                var createdFormModule = await _FormModuleBusiness.CreateFormModuleAsync(formModuleDto);
+                var createdFormModule = await _genericBusiness.CreateAsync(formModuleDto);
                 return CreatedAtAction(nameof(GetFormModuleById), new { id = createdFormModule.Id }, createdFormModule);
             }
             catch (ValidationException ex)
@@ -140,7 +144,8 @@ namespace Web.Controllers
         {
             try
             {
-                var updatedRelation = await _FormModuleBusiness.UpdateFormModuleAsync(id, formModuleDto);
+                formModuleDto.Id = id; // Asegurar que el ID coincida
+                var updatedRelation = await _genericBusiness.UpdateAsync(id, formModuleDto);
                 return Ok(updatedRelation);
             }
             catch (ValidationException ex)
@@ -161,10 +166,10 @@ namespace Web.Controllers
         }
 
         /// <summary>
-        /// Actualiza parcialmente una relación formulario-módulo (ej. StatusProcedure)
+        /// Actualiza parcialmente una relación formulario-módulo
         /// </summary>
         /// <param name="id">ID de la relación a actualizar</param>
-        /// <param name="formModuleDto">Datos parciales a aplicar (principalmente StatusProcedure)</param>
+        /// <param name="formModuleDto">Datos parciales a aplicar</param>
         /// <returns>Relación actualizada</returns>
         [HttpPatch("{id}")]
         [ProducesResponseType(typeof(FormModuleDto), 200)]
@@ -175,7 +180,8 @@ namespace Web.Controllers
         {
             try
             {
-                var patchedRelation = await _FormModuleBusiness.PatchFormModuleAsync(id, formModuleDto);
+                formModuleDto.Id = id; // Asegurar que el ID coincida
+                var patchedRelation = await _genericBusiness.PatchAsync(id, formModuleDto);
                 return Ok(patchedRelation);
             }
             catch (ValidationException ex)
@@ -208,7 +214,7 @@ namespace Web.Controllers
         {
             try
             {
-                await _FormModuleBusiness.DeleteFormModuleAsync(id);
+                await _genericBusiness.DeleteAsync(id);
                 return NoContent(); // 204 No Content
             }
             catch (ValidationException ex)
@@ -224,6 +230,62 @@ namespace Web.Controllers
             catch (ExternalServiceException ex)
             {
                 _logger.LogError(ex, "Error al eliminar relación formulario-módulo con ID: {FormModuleId}", id);
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene todos los formularios asignados a un módulo específico
+        /// </summary>
+        /// <param name="moduleId">ID del módulo</param>
+        /// <returns>Lista de relaciones FormModule para el módulo indicado</returns>
+        [HttpGet("by-module/{moduleId}")]
+        [ProducesResponseType(typeof(IEnumerable<FormModuleDto>), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> GetFormsByModuleId(int moduleId)
+        {
+            try
+            {
+                var forms = await _formModuleBusiness.GetFormsByModuleIdAsync(moduleId);
+                return Ok(forms);
+            }
+            catch (ValidationException ex)
+            {
+                _logger.LogWarning(ex, "Validación fallida al obtener formularios para el módulo con ID: {ModuleId}", moduleId);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ExternalServiceException ex)
+            {
+                _logger.LogError(ex, "Error al obtener formularios para el módulo con ID: {ModuleId}", moduleId);
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene todos los módulos asignados a un formulario específico
+        /// </summary>
+        /// <param name="formId">ID del formulario</param>
+        /// <returns>Lista de relaciones FormModule para el formulario indicado</returns>
+        [HttpGet("by-form/{formId}")]
+        [ProducesResponseType(typeof(IEnumerable<FormModuleDto>), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> GetModulesByFormId(int formId)
+        {
+            try
+            {
+                var modules = await _formModuleBusiness.GetModulesByFormIdAsync(formId);
+                return Ok(modules);
+            }
+            catch (ValidationException ex)
+            {
+                _logger.LogWarning(ex, "Validación fallida al obtener módulos para el formulario con ID: {FormId}", formId);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ExternalServiceException ex)
+            {
+                _logger.LogError(ex, "Error al obtener módulos para el formulario con ID: {FormId}", formId);
                 return StatusCode(500, new { message = ex.Message });
             }
         }

@@ -7,7 +7,13 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
 using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.Http; // Agregado para PathString
+using Microsoft.AspNetCore.Http;
+using Data.Interfaces;
+using Entity.Model; // Corregido: namespace correcto para Form
+using Entity.DTOs; // Agregado: namespace para FormDto
+using Entity.Interfaces; // Agregado: namespace para interfaces de entidades
+using Business.Interfaces; // Agregado: namespace para interfaces de negocio
+using Data.Repositories; // Agregado: namespace para repositorios
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -96,39 +102,56 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 Console.WriteLine("Usando SQL Server como proveedor de base de datos");
 
-//Registrar clases de Rol
-builder.Services.AddScoped<RolData>();
-builder.Services.AddScoped<RolBusiness>();
+// Registrar implementaciones genéricas
+// Form
+builder.Services.AddScoped<IGenericRepository<Form, int>, FormData>();
+builder.Services.AddScoped<IGenericBusiness<FormDto, int>, FormBusiness>();
 
+// Module
+builder.Services.AddScoped<IGenericRepository<Module, int>, ModuleData>();
+builder.Services.AddScoped<IGenericBusiness<ModuleDto, int>, ModuleBusiness>();
+
+// Person
+builder.Services.AddScoped<IGenericRepository<Person, int>, PersonData>();
+builder.Services.AddScoped<IGenericBusiness<PersonDto, int>, PersonBusiness>();
+
+// Rol
+builder.Services.AddScoped<IGenericRepository<Rol, int>, RolData>();
+builder.Services.AddScoped<IGenericBusiness<RolDto, int>, RolBusiness>();
+builder.Services.AddScoped<RolBusiness>(); // También necesitamos registrar la implementación concreta para métodos específicos
+
+// User
+builder.Services.AddScoped<IGenericRepository<User, int>, UserData>();
+builder.Services.AddScoped<IGenericBusiness<UserDto, int>, UserBusiness>();
+builder.Services.AddScoped<UserData>(); // Registrar también la implementación concreta para métodos específicos
+builder.Services.AddScoped<UserBusiness>(); // Registrar también la implementación concreta para métodos específicos
+
+// A medida que vayas refactorizando otros servicios, podrás registrarlos de manera similar:
+// Ejemplo para futuras entidades:
+// builder.Services.AddScoped<IGenericRepository<OtraEntidad, int>, OtraEntidadData>();
+// builder.Services.AddScoped<IGenericBusiness<OtraEntidadDto, int>, OtraEntidadBusiness>();
+
+// Las siguientes clases aún no han sido refactorizadas, así que mantienen su registro original
 // Registrar clases de ChangeLog
 builder.Services.AddScoped<ChangeLogData>();
 
-// Registrar clases de Form
-builder.Services.AddScoped<FormData>();
-builder.Services.AddScoped<FormBusiness>();
-
 // Registrar clases de FormModule
-builder.Services.AddScoped<FormModuleData>();
-builder.Services.AddScoped<FormModuleBusiness>();
-
-// Registrar clases de Module
-builder.Services.AddScoped<ModuleData>();
-builder.Services.AddScoped<ModuleBusiness>();
-
-// Registrar clases de Person
-builder.Services.AddScoped<PersonData>();
-builder.Services.AddScoped<PersonBusiness>();
+builder.Services.AddScoped<IGenericRepository<FormModule, int>, FormModuleData>();
+builder.Services.AddScoped<IGenericBusiness<FormModuleDto, int>, FormModuleBusiness>();
+builder.Services.AddScoped<FormModuleData>(); // Para métodos específicos
+builder.Services.AddScoped<FormModuleBusiness>(); // Para métodos específicos
 
 // Registrar clases de RolForm
-builder.Services.AddScoped<RolFormData>();
-builder.Services.AddScoped<RolFormBusiness>();
+builder.Services.AddScoped<IGenericRepository<RolForm, int>, RolFormData>();
+builder.Services.AddScoped<IGenericBusiness<RolFormDto, int>, RolFormBusiness>();
+builder.Services.AddScoped<RolFormData>(); // Para métodos específicos
+builder.Services.AddScoped<RolFormBusiness>(); // Para métodos específicos
 
-// Registrar clases de User
-builder.Services.AddScoped<UserData>();
-builder.Services.AddScoped<UserBusiness>();
-
-// Registrar clases de UserRol
-builder.Services.AddScoped<UserRolData>();
+// Registrar clases de UserRol - Actualizado para usar patrón genérico
+builder.Services.AddScoped<IGenericRepository<UserRol, int>, UserRolData>();
+builder.Services.AddScoped<IGenericBusiness<UserRolDto, int>>(provider => 
+    provider.GetRequiredService<UserRolBusiness>());
+builder.Services.AddScoped<UserRolData>(); // Para métodos específicos
 builder.Services.AddScoped<UserRolBusiness>();
 
 try

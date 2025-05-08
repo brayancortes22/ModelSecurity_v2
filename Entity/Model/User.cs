@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Entity.Model
 {
-    public class User : IActivable
+    public class User : IEntity, IActivable, IAuditable
     {
         public int Id { get; set; }
         public string Username { get; set; }
@@ -15,6 +15,9 @@ namespace Entity.Model
         public string Password { get; set; }
         public bool Active { get; set; }
         public int PersonId { get; set; }
+        public DateTime CreateDate { get; set; }
+        public DateTime? DeleteDate { get; set; }
+        public DateTime? UpdateDate { get; set; }
 
         // Propiedades de navegación
         public Person Person { get; set; }

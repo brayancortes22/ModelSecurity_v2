@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Entity.Model
 {
-    public class Form : IActivable
+    public class Form : IEntity, IActivable, IAuditable
     {
         public int Id { get; set; }
         public string Name { get; set; }

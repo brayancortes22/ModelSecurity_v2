@@ -1,12 +1,11 @@
-﻿using Business;
+﻿using Business.Interfaces;
 using Entity.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Utilities.Exceptions;
-using ValidationException = Utilities.Exceptions.ValidationException;
 
 namespace Web.Controllers
 {
@@ -18,18 +17,18 @@ namespace Web.Controllers
     [Produces("application/json")]
     public class FormController : ControllerBase
     {
-        private readonly FormBusiness _FormBusiness;
+        private readonly IGenericBusiness<FormDto, int> _formBusiness;
         private readonly ILogger<FormController> _logger;
 
         /// <summary>
         /// Constructor del controlador de formularios
         /// </summary>
-        /// <param name="formBusiness">Capa de negocio de formularios</param>
+        /// <param name="formBusiness">Servicio de negocio para formularios</param>
         /// <param name="logger">Logger para registro de eventos</param>
-        public FormController(FormBusiness formBusiness, ILogger<FormController> logger)
+        public FormController(IGenericBusiness<FormDto, int> formBusiness, ILogger<FormController> logger)
         {
-            _FormBusiness = formBusiness;
-            _logger = logger;
+            _formBusiness = formBusiness ?? throw new ArgumentNullException(nameof(formBusiness));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
@@ -45,7 +44,7 @@ namespace Web.Controllers
         {
             try
             {
-                var forms = await _FormBusiness.GetAllFormsAsync();
+                var forms = await _formBusiness.GetAllAsync();
                 return Ok(forms);
             }
             catch (ExternalServiceException ex)
@@ -73,7 +72,7 @@ namespace Web.Controllers
         {
             try
             {
-                var form = await _FormBusiness.GetFormByIdAsync(id);
+                var form = await _formBusiness.GetByIdAsync(id);
                 return Ok(form);
             }
             catch (ValidationException ex)
@@ -109,7 +108,7 @@ namespace Web.Controllers
         {
             try
             {
-                var createdForm = await _FormBusiness.CreateFormAsync(formDto);
+                var createdForm = await _formBusiness.CreateAsync(formDto);
                 return CreatedAtAction(nameof(GetFormById), new { id = createdForm.Id }, createdForm);
             }
             catch (ValidationException ex)
@@ -138,7 +137,7 @@ namespace Web.Controllers
         {
             try
             {
-                var updatedForm = await _FormBusiness.UpdateFormAsync(id, formDto);
+                var updatedForm = await _formBusiness.UpdateAsync(id, formDto);
                 return Ok(updatedForm);
             }
             catch (ValidationException ex)
@@ -172,7 +171,7 @@ namespace Web.Controllers
         {
             try
             {
-                var patchedForm = await _FormBusiness.PatchFormAsync(id, formDto);
+                var patchedForm = await _formBusiness.PatchAsync(id, formDto);
                 return Ok(patchedForm);
             }
             catch (ValidationException ex)
@@ -206,7 +205,7 @@ namespace Web.Controllers
         {
             try
             {
-                await _FormBusiness.DeleteFormAsync(id);
+                await _formBusiness.DeleteAsync(id);
                 return NoContent();
             }
             catch (ValidationException ex)
@@ -239,7 +238,7 @@ namespace Web.Controllers
         {
             try
             {
-                await _FormBusiness.SoftDeleteFormAsync(id);
+                await _formBusiness.SoftDeleteAsync(id);
                 return NoContent();
             }
             catch (ValidationException ex)
@@ -259,13 +258,13 @@ namespace Web.Controllers
             }
         }
 
-          /// <summary>
-        /// Reactiva un usuario previamente desactivado.
+        /// <summary>
+        /// Reactiva un formulario previamente desactivado.
         /// </summary>
-        /// <param name="id">ID del usuario a reactivar.</param>
+        /// <param name="id">ID del formulario a reactivar.</param>
         /// <response code="204">Si la activación fue exitosa o ya estaba activo.</response>
         /// <response code="400">Si el ID es inválido.</response>
-        /// <response code="404">Si no se encuentra el usuario.</response>
+        /// <response code="404">Si no se encuentra el formulario.</response>
         /// <response code="500">Si ocurre un error interno.</response>
         [HttpPost("{id}/activate")] // Usar POST para acciones que cambian estado
         [ProducesResponseType(204)]
@@ -276,8 +275,8 @@ namespace Web.Controllers
         {
             try
             {
-                await _FormBusiness.ActivateFormAsync(id);
-                return NoContent(); // Opcionalmente podrías devolver el usuario activado (Ok(FormDto))
+                await _formBusiness.ActivateAsync(id);
+                return NoContent(); // Opcionalmente podrías devolver el formulario activado (Ok(FormDto))
             }
             catch (ValidationException ex)
             {
