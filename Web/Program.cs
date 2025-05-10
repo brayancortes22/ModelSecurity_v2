@@ -120,70 +120,43 @@ builder.Services.AddSingleton<IBusinessFactory, BusinessFactory>();
 builder.Services.AddSingleton<IActivacionDataFactory, ActivacionDataFactory>();
 
 // Registrar implementaciones genéricas
-// Form
-builder.Services.AddScoped<IGenericRepository<Form, int>, FormData>();
-// Usando la clase existente que ahora usa AutoMapper internamente
-builder.Services.AddScoped<IGenericBusiness<FormDto, int>, FormBusiness>();
-// Registrar nuestras versiones con AutoMapper
-builder.Services.AddScoped<AutoMapperFormBusiness>();
-builder.Services.AddScoped<AutoMapperModuleBusiness>();
-builder.Services.AddScoped<AutoMapperPersonBusiness>();
-builder.Services.AddScoped<AutoMapperRolBusiness>();
-builder.Services.AddScoped<AutoMapperUserBusiness>();
+// Form - Utilizar solo AutoMapper para simplificar
+builder.Services.AddScoped<IGenericBusiness<FormDto, int>, AutoMapperFormBusiness>();
 
 // Module (usando alias para evitar ambigüedad)
 builder.Services.AddScoped<IGenericRepository<ModuleEntity, int>, ModuleData>();
-builder.Services.AddScoped<IGenericBusiness<ModuleDto, int>, ModuleBusiness>();
-// Versión alternativa con AutoMapper - comentada, descomentar cuando quieras usar esta versión
-// builder.Services.AddScoped<IGenericBusiness<ModuleDto, int>, AutoMapperModuleBusiness>();
+builder.Services.AddScoped<IGenericBusiness<ModuleDto, int>, AutoMapperModuleBusiness>();
 
 // Person
 builder.Services.AddScoped<IGenericRepository<Person, int>, PersonData>();
-builder.Services.AddScoped<IGenericBusiness<PersonDto, int>, PersonBusiness>();
-// Versión alternativa con AutoMapper - comentada, descomentar cuando quieras usar esta versión
-// builder.Services.AddScoped<IGenericBusiness<PersonDto, int>, AutoMapperPersonBusiness>();
+builder.Services.AddScoped<IGenericBusiness<PersonDto, int>, AutoMapperPersonBusiness>();
 
 // Rol
 builder.Services.AddScoped<IGenericRepository<Rol, int>, RolData>();
-builder.Services.AddScoped<IGenericBusiness<RolDto, int>, RolBusiness>();
-builder.Services.AddScoped<RolBusiness>(); // También necesitamos registrar la implementación concreta para métodos específicos
-// Versión alternativa con AutoMapper - comentada, descomentar cuando quieras usar esta versión
-// builder.Services.AddScoped<IGenericBusiness<RolDto, int>, AutoMapperRolBusiness>();
+builder.Services.AddScoped<IGenericBusiness<RolDto, int>, AutoMapperRolBusiness>();
 
 // User
 builder.Services.AddScoped<IGenericRepository<User, int>, UserData>();
-builder.Services.AddScoped<IGenericBusiness<UserDto, int>, UserBusiness>();
-builder.Services.AddScoped<UserData>(); // Registrar también la implementación concreta para métodos específicos
-builder.Services.AddScoped<UserBusiness>(); // Registrar también la implementación concreta para métodos específicos
-// Versión alternativa con AutoMapper - comentada, descomentar cuando quieras usar esta versión
-// builder.Services.AddScoped<IGenericBusiness<UserDto, int>, AutoMapperUserBusiness>();
+builder.Services.AddScoped<IGenericBusiness<UserDto, int>, AutoMapperUserBusiness>();
+builder.Services.AddScoped<UserData>(); // Necesario para métodos específicos
 
-// A medida que vayas refactorizando otros servicios, podrás registrarlos de manera similar:
-// Ejemplo para futuras entidades:
-// builder.Services.AddScoped<IGenericRepository<OtraEntidad, int>, OtraEntidadData>();
-// builder.Services.AddScoped<IGenericBusiness<OtraEntidadDto, int>, OtraEntidadBusiness>();
-
-// Las siguientes clases aún no han sido refactorizadas, así que mantienen su registro original
-// Registrar clases de ChangeLog
-builder.Services.AddScoped<ChangeLogData>();
-
-// Registrar clases de FormModule
+// FormModule
 builder.Services.AddScoped<IGenericRepository<FormModule, int>, FormModuleData>();
-builder.Services.AddScoped<IGenericBusiness<FormModuleDto, int>, FormModuleBusiness>();
-builder.Services.AddScoped<FormModuleData>(); // Para métodos específicos
-builder.Services.AddScoped<FormModuleBusiness>(); // Para métodos específicos
+builder.Services.AddScoped<FormModuleData>(); // Necesario para métodos específicos
+builder.Services.AddScoped<IGenericBusiness<FormModuleDto, int>, AutoMapperFormModuleBusiness>();
 
-// Registrar clases de RolForm
+// RolForm
 builder.Services.AddScoped<IRolFormRepository, RolFormData>();
 builder.Services.AddScoped<IGenericRepository<RolForm, int>, RolFormData>();
-builder.Services.AddScoped<IGenericBusiness<RolFormDto, int>, RolFormBusiness>();
-builder.Services.AddScoped<RolFormBusiness>(); // Para métodos específicos
+builder.Services.AddScoped<IGenericBusiness<RolFormDto, int>, AutoMapperRolFormBusiness>();
 
-// Registrar clases de UserRol - Actualizado para usar patrón genérico
+// UserRol
 builder.Services.AddScoped<IGenericRepository<UserRol, int>, UserRolData>();
-builder.Services.AddScoped<IGenericBusiness<UserRolDto, int>, UserRolBusiness>();
-builder.Services.AddScoped<UserRolData>(); // Para métodos específicos
-builder.Services.AddScoped<UserRolBusiness>();
+builder.Services.AddScoped<UserRolData>(); // Necesario para métodos específicos
+builder.Services.AddScoped<IGenericBusiness<UserRolDto, int>, AutoMapperUserRolBusiness>();
+
+// Registrar clases de ChangeLog
+builder.Services.AddScoped<ChangeLogData>();
 
 try
 {
