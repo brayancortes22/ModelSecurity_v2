@@ -1,5 +1,6 @@
 ﻿using Business.Base;
 using Business.Interfaces;
+using Business.Mappers;
 using Data;
 using Data.Factory;
 using Data.Interfaces;
@@ -19,23 +20,28 @@ namespace Business
     public class FormModuleBusiness : GenericBusiness<FormModule, FormModuleDto, int>, IGenericBusiness<FormModuleDto, int>
     {
         private readonly FormModuleData _formModuleDataSpecific;
+        private readonly IMappingService _mappingService;
 
         public FormModuleBusiness(
             IRepositoryFactory repositoryFactory,
             FormModuleData formModuleDataSpecific,
-            ILogger<FormModuleBusiness> logger)
+            ILogger<FormModuleBusiness> logger,
+            IMappingService mappingService)
             : base(repositoryFactory, logger)
         {
             _formModuleDataSpecific = formModuleDataSpecific ?? throw new ArgumentNullException(nameof(formModuleDataSpecific));
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
         
         public FormModuleBusiness(
             IGenericRepository<FormModule, int> repository,
             FormModuleData formModuleDataSpecific,
-            ILogger<FormModuleBusiness> logger)
+            ILogger<FormModuleBusiness> logger,
+            IMappingService mappingService)
             : base(repository, logger)
         {
             _formModuleDataSpecific = formModuleDataSpecific ?? throw new ArgumentNullException(nameof(formModuleDataSpecific));
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
 
         /// <summary>
@@ -120,14 +126,11 @@ namespace Business
         /// </summary>
         protected override FormModule MapToEntity(FormModuleDto dto)
         {
-            return new FormModule
-            {
-                Id = dto.Id,
-                StatusProcedure = dto.StatusProcedure,
-                FormId = dto.FormId,
-                ModuleId = dto.ModuleId,
-                Active = true
-            };
+            var entity = _mappingService.Map<FormModuleDto, FormModule>(dto);
+            // Asegurar que esté activo por defecto para nuevas entidades
+            if (entity.Id == 0)
+                entity.Active = true;
+            return entity;
         }
 
         /// <summary>
@@ -135,32 +138,7 @@ namespace Business
         /// </summary>
         protected override FormModuleDto MapToDto(FormModule entity)
         {
-            return new FormModuleDto
-            {
-                Id = entity.Id,
-                StatusProcedure = entity.StatusProcedure,
-                FormId = entity.FormId,
-                ModuleId = entity.ModuleId,
-                // Mapeo de propiedades de navegación si están disponibles
-                Module = entity.Module != null ? new ModuleDto 
-                { 
-                    Id = entity.Module.Id,
-                    Name = entity.Module.Name,
-                    Description = entity.Module.Description,
-                    Active = entity.Module.Active
-                } : null,
-                Form = entity.Form != null ? new FormDto
-                {
-                    Id = entity.Form.Id,
-                    Name = entity.Form.Name,
-                    Description = entity.Form.Description,
-                    Route = entity.Form.Route,
-                    Cuestion = entity.Form.Cuestion,
-                    TypeCuestion = entity.Form.TypeCuestion,
-                    Answer = entity.Form.Answer,
-                    Active = entity.Form.Active
-                } : null
-            };
+            return _mappingService.Map<FormModule, FormModuleDto>(entity);
         }
 
         /// <summary>
@@ -168,9 +146,7 @@ namespace Business
         /// </summary>
         protected override void UpdateEntityFromDto(FormModuleDto dto, FormModule entity)
         {
-            entity.StatusProcedure = dto.StatusProcedure;
-            entity.FormId = dto.FormId;
-            entity.ModuleId = dto.ModuleId;
+            _mappingService.UpdateEntityFromDto(dto, entity);
         }
 
         /// <summary>
@@ -206,15 +182,7 @@ namespace Business
         /// </summary>
         protected override IEnumerable<FormModuleDto> MapToDtoList(IEnumerable<FormModule> entities)
         {
-            if (entities == null)
-                return new List<FormModuleDto>();
-
-            var dtos = new List<FormModuleDto>();
-            foreach (var entity in entities)
-            {
-                dtos.Add(MapToDto(entity));
-            }
-            return dtos;
+            return _mappingService.MapCollectionToDto<FormModule, FormModuleDto>(entities);
         }
     }
 }

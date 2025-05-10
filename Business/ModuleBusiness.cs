@@ -1,5 +1,6 @@
 ﻿using Business.Base;
 using Business.Interfaces;
+using Business.Mappers;
 using Data.Factory;
 using Data.Interfaces;
 using Entity.DTOs;
@@ -18,14 +19,18 @@ namespace Business
     /// </summary>
     public class ModuleBusiness : GenericBusiness<Module, ModuleDto, int>, IGenericBusiness<ModuleDto, int>
     {
-        public ModuleBusiness(IRepositoryFactory repositoryFactory, ILogger<ModuleBusiness> logger)
+        private readonly IMappingService _mappingService;
+
+        public ModuleBusiness(IRepositoryFactory repositoryFactory, ILogger<ModuleBusiness> logger, IMappingService mappingService)
             : base(repositoryFactory, logger)
         {
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
         
-        public ModuleBusiness(IGenericRepository<Module, int> repository, ILogger<ModuleBusiness> logger)
+        public ModuleBusiness(IGenericRepository<Module, int> repository, ILogger<ModuleBusiness> logger, IMappingService mappingService)
             : base(repository, logger)
         {
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
 
         // Implementaciones específicas de los métodos abstractos
@@ -54,31 +59,17 @@ namespace Business
 
         protected override ModuleDto MapToDto(Module module)
         {
-            return new ModuleDto
-            {
-                Id = module.Id,
-                Name = module.Name,
-                Description = module.Description,
-                Active = module.Active
-            };
+            return _mappingService.Map<Module, ModuleDto>(module);
         }
 
         protected override Module MapToEntity(ModuleDto moduleDto)
         {
-            return new Module
-            {
-                Id = moduleDto.Id,
-                Name = moduleDto.Name,
-                Description = moduleDto.Description,
-                Active = moduleDto.Active
-            };
+            return _mappingService.Map<ModuleDto, Module>(moduleDto);
         }
 
         protected override void UpdateEntityFromDto(ModuleDto moduleDto, Module module)
         {
-            module.Name = moduleDto.Name;
-            module.Description = moduleDto.Description;
-            module.Active = moduleDto.Active;
+            _mappingService.UpdateEntityFromDto(moduleDto, module);
         }
 
         protected override bool PatchEntityFromDto(ModuleDto moduleDto, Module module)
@@ -102,7 +93,7 @@ namespace Business
 
         protected override IEnumerable<ModuleDto> MapToDtoList(IEnumerable<Module> modules)
         {
-            return modules.Select(MapToDto).ToList();
+            return _mappingService.MapCollectionToDto<Module, ModuleDto>(modules);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Business.Base;
 using Business.Interfaces;
+using Business.Mappers;
 using Data;
 using Data.Factory;
 using Data.Interfaces;
@@ -21,23 +22,28 @@ namespace Business
     public class UserBusiness : GenericBusiness<User, UserDto, int>, IGenericBusiness<UserDto, int>
     {
         private readonly UserData _userDataSpecific;
+        private readonly IMappingService _mappingService;
 
         public UserBusiness(
             IRepositoryFactory repositoryFactory, 
             UserData userDataSpecific,
-            ILogger<UserBusiness> logger)
+            ILogger<UserBusiness> logger,
+            IMappingService mappingService)
             : base(repositoryFactory, logger)
         {
             _userDataSpecific = userDataSpecific ?? throw new ArgumentNullException(nameof(userDataSpecific));
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
         
         public UserBusiness(
             IGenericRepository<User, int> repository, 
             UserData userDataSpecific,
-            ILogger<UserBusiness> logger)
+            ILogger<UserBusiness> logger,
+            IMappingService mappingService)
             : base(repository, logger)
         {
             _userDataSpecific = userDataSpecific ?? throw new ArgumentNullException(nameof(userDataSpecific));
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
 
         /// <summary>
@@ -186,41 +192,23 @@ namespace Business
 
         protected override UserDto MapToDto(User user)
         {
-            return new UserDto
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                Active = user.Active,
-                PersonId = user.PersonId,
-                Password = user.Password
-            };
+            return _mappingService.Map<User, UserDto>(user);
         }
 
         protected override User MapToEntity(UserDto userDto)
         {
-            return new User
-            {
-                Id = userDto.Id,
-                Username = userDto.Username,
-                Email = userDto.Email,
-                Password = userDto.Password,
-                PersonId = userDto.PersonId,
-                Active = userDto.Active
-            };
+            return _mappingService.Map<UserDto, User>(userDto);
         }
 
         protected override void UpdateEntityFromDto(UserDto userDto, User user)
         {
-            user.Username = userDto.Username;
-            user.Email = userDto.Email;
-            user.PersonId = userDto.PersonId;
-            user.Active = userDto.Active;
+            _mappingService.UpdateEntityFromDto(userDto, user);
             
-            // También actualizamos la contraseña si se proporciona
-            if (!string.IsNullOrWhiteSpace(userDto.Password))
+            // Proteger contra sobrescritura de contraseña en blanco
+            if (string.IsNullOrWhiteSpace(userDto.Password))
             {
-                user.Password = userDto.Password;
+                // No actualizar la contraseña si no se proporcionó una
+                // AutoMapper podría haberla establecido como null/empty
             }
         }
 
@@ -281,7 +269,7 @@ namespace Business
 
         protected override IEnumerable<UserDto> MapToDtoList(IEnumerable<User> users)
         {
-            return users.Select(MapToDto).ToList();
+            return _mappingService.MapCollectionToDto<User, UserDto>(users);
         }
 
         // Validación simple de formato de email

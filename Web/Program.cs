@@ -122,6 +122,7 @@ builder.Services.AddSingleton<IActivacionDataFactory, ActivacionDataFactory>();
 // Registrar implementaciones genéricas
 // Form
 builder.Services.AddScoped<IGenericRepository<Form, int>, FormData>();
+// Usando la clase existente que ahora usa AutoMapper internamente
 builder.Services.AddScoped<IGenericBusiness<FormDto, int>, FormBusiness>();
 // Registrar nuestras versiones con AutoMapper
 builder.Services.AddScoped<AutoMapperFormBusiness>();
@@ -180,8 +181,7 @@ builder.Services.AddScoped<RolFormBusiness>(); // Para métodos específicos
 
 // Registrar clases de UserRol - Actualizado para usar patrón genérico
 builder.Services.AddScoped<IGenericRepository<UserRol, int>, UserRolData>();
-builder.Services.AddScoped<IGenericBusiness<UserRolDto, int>>(provider => 
-    provider.GetRequiredService<UserRolBusiness>());
+builder.Services.AddScoped<IGenericBusiness<UserRolDto, int>, UserRolBusiness>();
 builder.Services.AddScoped<UserRolData>(); // Para métodos específicos
 builder.Services.AddScoped<UserRolBusiness>();
 

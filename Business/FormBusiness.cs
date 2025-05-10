@@ -1,5 +1,6 @@
 ﻿using Business.Base;
 using Business.Interfaces;
+using Business.Mappers;
 using Data;
 using Data.Factory;
 using Data.Interfaces;
@@ -19,14 +20,24 @@ namespace Business
     /// </summary>
     public class FormBusiness : GenericBusiness<Form, FormDto, int>, IGenericBusiness<FormDto, int>
     {
-        public FormBusiness(IRepositoryFactory repositoryFactory, ILogger<FormBusiness> logger)
+        private readonly IMappingService _mappingService;
+
+        public FormBusiness(
+            IRepositoryFactory repositoryFactory, 
+            ILogger<FormBusiness> logger,
+            IMappingService mappingService)
             : base(repositoryFactory, logger)
         {
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
         
-        public FormBusiness(IGenericRepository<Form, int> repository, ILogger<FormBusiness> logger)
+        public FormBusiness(
+            IGenericRepository<Form, int> repository, 
+            ILogger<FormBusiness> logger,
+            IMappingService mappingService)
             : base(repository, logger)
         {
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
 
         // Implementaciones específicas de los métodos abstractos
@@ -37,9 +48,7 @@ namespace Business
                 _logger.LogWarning("Se intentó operar con un formulario con ID inválido: {FormId}", id);
                 throw new ValidationException("id", "El ID del formulario debe ser mayor que cero");
             }
-        }
-
-        protected override void ValidateDto(FormDto formDto)
+        }        protected override void ValidateDto(FormDto formDto)
         {
             if (formDto == null)
             {
@@ -55,49 +64,22 @@ namespace Business
 
         protected override FormDto MapToDto(Form form)
         {
-            return new FormDto
-            {
-                Id = form.Id,
-                Name = form.Name,
-                Description = form.Description,
-                Cuestion = form.Cuestion,
-                TypeCuestion = form.TypeCuestion,
-                Answer = form.Answer,
-                Route = form.Route,
-                Active = form.Active
-            };
+            return _mappingService.Map<Form, FormDto>(form);
         }
 
         protected override Form MapToEntity(FormDto formDto)
         {
-            return new Form
-            {
-                Id = formDto.Id,
-                Name = formDto.Name,
-                Description = formDto.Description,
-                Cuestion = formDto.Cuestion,
-                TypeCuestion = formDto.TypeCuestion,
-                Answer = formDto.Answer,
-                Route = formDto.Route,
-                Active = formDto.Active
-            };
-        }
-
-        protected override void UpdateEntityFromDto(FormDto formDto, Form form)
+            return _mappingService.Map<FormDto, Form>(formDto);
+        }        protected override void UpdateEntityFromDto(FormDto formDto, Form form)
         {
-            form.Name = formDto.Name;
-            form.Description = formDto.Description;
-            form.Cuestion = formDto.Cuestion;
-            form.TypeCuestion = formDto.TypeCuestion;
-            form.Answer = formDto.Answer;
-            form.Route = formDto.Route;
-            form.Active = formDto.Active;
+            _mappingService.UpdateEntityFromDto(formDto, form);
         }
 
         protected override bool PatchEntityFromDto(FormDto formDto, Form form)
         {
             bool updated = false;
 
+            // Solo actualizamos los campos no nulos del DTO
             if (!string.IsNullOrWhiteSpace(formDto.Name) && formDto.Name != form.Name)
             {
                 form.Name = formDto.Name;
@@ -139,7 +121,7 @@ namespace Business
 
         protected override IEnumerable<FormDto> MapToDtoList(IEnumerable<Form> forms)
         {
-            return forms.Select(MapToDto).ToList();
+            return _mappingService.MapCollectionToDto<Form, FormDto>(forms);
         }
     }
 }

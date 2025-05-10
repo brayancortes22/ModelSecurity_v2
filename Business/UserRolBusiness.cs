@@ -1,5 +1,6 @@
 ﻿using Business.Base;
 using Business.Interfaces;
+using Business.Mappers;
 using Data;
 using Data.Factory;
 using Data.Interfaces;
@@ -21,23 +22,28 @@ namespace Business
     public class UserRolBusiness : GenericBusiness<UserRol, UserRolDto, int>, IGenericBusiness<UserRolDto, int>
     {
         private readonly UserRolData _userRolDataSpecific;
+        private readonly IMappingService _mappingService;
 
         public UserRolBusiness(
             IRepositoryFactory repositoryFactory,
             UserRolData userRolDataSpecific,
-            ILogger<UserRolBusiness> logger)
+            ILogger<UserRolBusiness> logger,
+            IMappingService mappingService)
             : base(repositoryFactory, logger)
         {
             _userRolDataSpecific = userRolDataSpecific ?? throw new ArgumentNullException(nameof(userRolDataSpecific));
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
         
         public UserRolBusiness(
             IGenericRepository<UserRol, int> repository,
             UserRolData userRolDataSpecific,
-            ILogger<UserRolBusiness> logger)
+            ILogger<UserRolBusiness> logger,
+            IMappingService mappingService)
             : base(repository, logger)
         {
             _userRolDataSpecific = userRolDataSpecific ?? throw new ArgumentNullException(nameof(userRolDataSpecific));
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
 
         /// <summary>
@@ -122,33 +128,30 @@ namespace Business
 
         protected override UserRolDto MapToDto(UserRol userRol)
         {
-            return new UserRolDto
-            {
-                Id = userRol.Id,
-                UserId = userRol.UserId,
-                RolId = userRol.RolId
-            };
+            return _mappingService.Map<UserRol, UserRolDto>(userRol);
         }
 
         protected override UserRol MapToEntity(UserRolDto userRolDto)
         {
-            return new UserRol
+            var entity = _mappingService.Map<UserRolDto, UserRol>(userRolDto);
+            
+            // Establecer valores predeterminados que no están en el DTO
+            if (entity.Id == 0) // Si es una entidad nueva
             {
-                Id = userRolDto.Id,
-                UserId = userRolDto.UserId,
-                RolId = userRolDto.RolId,
-                Active = true,
-                CreateDate = DateTime.UtcNow,
-                // No inicializamos las propiedades de navegación para evitar referencias circulares
-                User = null,
-                Rol = null
-            };
+                entity.Active = true;
+                entity.CreateDate = DateTime.UtcNow;
+            }
+            
+            // No inicializamos las propiedades de navegación para evitar referencias circulares
+            entity.User = null;
+            entity.Rol = null;
+            
+            return entity;
         }
 
         protected override void UpdateEntityFromDto(UserRolDto userRolDto, UserRol userRol)
         {
-            userRol.UserId = userRolDto.UserId;
-            userRol.RolId = userRolDto.RolId;
+            _mappingService.UpdateEntityFromDto(userRolDto, userRol);
             userRol.UpdateDate = DateTime.UtcNow;
         }
 
@@ -180,7 +183,7 @@ namespace Business
 
         protected override IEnumerable<UserRolDto> MapToDtoList(IEnumerable<UserRol> userRoles)
         {
-            return userRoles.Select(MapToDto).ToList();
+            return _mappingService.MapCollectionToDto<UserRol, UserRolDto>(userRoles);
         }
     }
 }

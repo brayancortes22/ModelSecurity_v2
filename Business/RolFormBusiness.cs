@@ -1,6 +1,7 @@
 ﻿using Business.Base;
 using Business.Factory;
 using Business.Interfaces;
+using Business.Mappers;
 using Data;
 using Data.Factory;
 using Data.Interfaces;
@@ -23,30 +24,35 @@ namespace Business
         private readonly IGenericRepository<RolForm, int> _repository;
         private readonly ILogger<RolFormBusiness> _logger;
         private readonly IRepositoryFactory? _repositoryFactory;
+        private readonly IMappingService _mappingService;
 
         /// <summary>
         /// Constructor con inyección de RepositoryFactory
         /// </summary>
         public RolFormBusiness(
             IRepositoryFactory repositoryFactory,
-            ILogger<RolFormBusiness> logger)
+            ILogger<RolFormBusiness> logger,
+            IMappingService mappingService)
         {
             _repositoryFactory = repositoryFactory ?? throw new ArgumentNullException(nameof(repositoryFactory));
             _repository = _repositoryFactory.CreateSpecificRepository<IGenericRepository<RolForm, int>>();
             _rolFormRepository = _repositoryFactory.CreateSpecificRepository<IRolFormRepository>();
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }        /// <summary>
         /// Constructor tradicional para compatibilidad
         /// </summary>
         public RolFormBusiness(
             IRolFormRepository rolFormRepository,
             IGenericRepository<RolForm, int> repository,
-            ILogger<RolFormBusiness> logger)
+            ILogger<RolFormBusiness> logger,
+            IMappingService mappingService)
         {
             _rolFormRepository = rolFormRepository ?? throw new ArgumentNullException(nameof(rolFormRepository));
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _repositoryFactory = null;
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
 
         // Método para obtener todos los roles de formulario como DTOs
@@ -380,37 +386,23 @@ namespace Business
                 _logger.LogWarning("Se intentó crear/actualizar un rol de formulario con permiso vacío");
                 throw new Utilities.Exceptions.ValidationException("permission", "El permiso del rol de formulario es obligatorio");
             }
-        }
-
-        //Funciones de mapeos 
+        }        //Funciones de mapeos 
         // Método para mapear de RolForm a RolFormDto
         private RolFormDto MapToDTO(RolForm rolForm)
         {
-            return new RolFormDto
-            {
-                Id = rolForm.Id,
-                Permission = rolForm.Permission,
-                RolId = rolForm.RolId,
-                FormId = rolForm.FormId,
-            };
+            return _mappingService.Map<RolForm, RolFormDto>(rolForm);
         }
 
         // Método para mapear de RolFormDto a RolForm
         private RolForm MapToEntity(RolFormDto rolFormDto)
         {
-            return new RolForm
-            {
-                Id = rolFormDto.Id,
-                Permission = rolFormDto.Permission,
-                RolId = rolFormDto.RolId,
-                FormId = rolFormDto.FormId
-            };
-        }
-
-        // Método para mapear una lista de RolForm a una lista de RolFormDto
+            return _mappingService.Map<RolFormDto, RolForm>(rolFormDto);
+        }        // Método para mapear una lista de RolForm a una lista de RolFormDto
         private IEnumerable<RolFormDto> MapToDTOList(IEnumerable<RolForm> rolForms)
         {
-            var rolFormsDTO = new List<RolFormDto>();
+            // En lugar de usar MapCollectionToDto que tiene restricciones de tipo,
+            // mapeamos cada elemento individualmente
+            List<RolFormDto> rolFormsDTO = new List<RolFormDto>();
             foreach (var rolForm in rolForms)
             {
                 rolFormsDTO.Add(MapToDTO(rolForm));

@@ -1,5 +1,6 @@
 ﻿using Business.Base;
 using Business.Interfaces;
+using Business.Mappers;
 using Data;
 using Data.Factory;
 using Data.Interfaces;
@@ -20,17 +21,20 @@ namespace Business
     public class RolBusiness : GenericBusiness<Rol, RolDto, int>, IGenericBusiness<RolDto, int>
     {
         private readonly RolFormData _rolFormData; // Para obtener los formularios asociados a un rol
+        private readonly IMappingService _mappingService;
 
-        public RolBusiness(IRepositoryFactory repositoryFactory, RolFormData rolFormData, ILogger<RolBusiness> logger)
+        public RolBusiness(IRepositoryFactory repositoryFactory, RolFormData rolFormData, ILogger<RolBusiness> logger, IMappingService mappingService)
             : base(repositoryFactory, logger)
         {
             _rolFormData = rolFormData ?? throw new ArgumentNullException(nameof(rolFormData));
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
         
-        public RolBusiness(IGenericRepository<Rol, int> repository, RolFormData rolFormData, ILogger<RolBusiness> logger)
+        public RolBusiness(IGenericRepository<Rol, int> repository, RolFormData rolFormData, ILogger<RolBusiness> logger, IMappingService mappingService)
             : base(repository, logger)
         {
             _rolFormData = rolFormData ?? throw new ArgumentNullException(nameof(rolFormData));
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
 
         // Implementaciones específicas de los métodos abstractos
@@ -59,31 +63,17 @@ namespace Business
 
         protected override RolDto MapToDto(Rol rol)
         {
-            return new RolDto
-            {
-                Id = rol.Id,
-                TypeRol = rol.TypeRol,
-                Description = rol.Description,
-                Active = rol.Active
-            };
+            return _mappingService.Map<Rol, RolDto>(rol);
         }
 
         protected override Rol MapToEntity(RolDto rolDto)
         {
-            return new Rol
-            {
-                Id = rolDto.Id,
-                TypeRol = rolDto.TypeRol,
-                Description = rolDto.Description,
-                Active = rolDto.Active
-            };
+            return _mappingService.Map<RolDto, Rol>(rolDto);
         }
 
         protected override void UpdateEntityFromDto(RolDto rolDto, Rol rol)
         {
-            rol.TypeRol = rolDto.TypeRol;
-            rol.Description = rolDto.Description;
-            rol.Active = rolDto.Active;
+            _mappingService.UpdateEntityFromDto(rolDto, rol);
         }
 
         protected override bool PatchEntityFromDto(RolDto rolDto, Rol rol)
@@ -107,7 +97,7 @@ namespace Business
 
         protected override IEnumerable<RolDto> MapToDtoList(IEnumerable<Rol> rols)
         {
-            return rols.Select(MapToDto).ToList();
+            return _mappingService.MapCollectionToDto<Rol, RolDto>(rols);
         }
 
         /// <summary>

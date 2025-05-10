@@ -1,5 +1,6 @@
 ﻿using Business.Base;
 using Business.Interfaces;
+using Business.Mappers;
 using Data.Factory;
 using Data.Interfaces;
 using Entity.DTOs;
@@ -34,14 +35,18 @@ namespace Business
             }
         }
 
-        public PersonBusiness(IRepositoryFactory repositoryFactory, ILogger<PersonBusiness> logger)
+        private readonly IMappingService _mappingService;
+
+        public PersonBusiness(IRepositoryFactory repositoryFactory, ILogger<PersonBusiness> logger, IMappingService mappingService)
             : base(repositoryFactory, logger)
         {
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
         
-        public PersonBusiness(IGenericRepository<Person, int> repository, ILogger<PersonBusiness> logger)
+        public PersonBusiness(IGenericRepository<Person, int> repository, ILogger<PersonBusiness> logger, IMappingService mappingService)
             : base(repository, logger)
         {
+            _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
 
         // Implementaciones específicas de los métodos abstractos
@@ -78,55 +83,17 @@ namespace Business
 
         protected override PersonDto MapToDto(Person person)
         {
-            return new PersonDto
-            {
-                Id = person.Id,
-                Name = person.Name,
-                FirstName = person.FirstName,
-                SecondName = person.SecondName,
-                FirstLastName = person.FirstLastName,
-                SecondLastName = person.SecondLastName,
-                PhoneNumber = person.PhoneNumber,
-                Email = person.Email,
-                TypeIdentification = person.TypeIdentification,
-                NumberIdentification = person.NumberIdentification,
-                Signing = person.Signing,
-                Active = person.Active
-            };
+            return _mappingService.Map<Person, PersonDto>(person);
         }
 
         protected override Person MapToEntity(PersonDto personDto)
         {
-            return new Person
-            {
-                Id = personDto.Id,
-                Name = personDto.Name,
-                FirstName = personDto.FirstName,
-                SecondName = personDto.SecondName,
-                FirstLastName = personDto.FirstLastName,
-                SecondLastName = personDto.SecondLastName,
-                PhoneNumber = personDto.PhoneNumber,
-                Email = personDto.Email,
-                TypeIdentification = personDto.TypeIdentification,
-                NumberIdentification = personDto.NumberIdentification,
-                Signing = personDto.Signing,
-                Active = personDto.Active
-            };
+            return _mappingService.Map<PersonDto, Person>(personDto);
         }
 
         protected override void UpdateEntityFromDto(PersonDto personDto, Person person)
         {
-            person.Name = personDto.Name;
-            person.FirstName = personDto.FirstName;
-            person.SecondName = personDto.SecondName;
-            person.FirstLastName = personDto.FirstLastName;
-            person.SecondLastName = personDto.SecondLastName;
-            person.PhoneNumber = personDto.PhoneNumber;
-            person.Email = personDto.Email;
-            person.TypeIdentification = personDto.TypeIdentification;
-            person.NumberIdentification = personDto.NumberIdentification;
-            person.Signing = personDto.Signing;
-            person.Active = personDto.Active;
+            _mappingService.UpdateEntityFromDto(personDto, person);
         }
 
         protected override bool PatchEntityFromDto(PersonDto personDto, Person person)
@@ -200,7 +167,7 @@ namespace Business
 
         protected override IEnumerable<PersonDto> MapToDtoList(IEnumerable<Person> persons)
         {
-            return persons.Select(MapToDto).ToList();
+            return _mappingService.MapCollectionToDto<Person, PersonDto>(persons);
         }
     }
 }
