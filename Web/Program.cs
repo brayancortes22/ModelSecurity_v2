@@ -115,45 +115,109 @@ builder.Services.AddAutoMapper(typeof(Business.Mappers.BaseMapperProfile).Assemb
 builder.Services.AddScoped<Business.Mappers.IMappingService, Business.Mappers.MappingService>();
 
 // Registrar los factories (NUEVO)
-builder.Services.AddSingleton<IRepositoryFactory, RepositoryFactory>();
-builder.Services.AddSingleton<IBusinessFactory, BusinessFactory>();
-builder.Services.AddSingleton<IActivacionDataFactory, ActivacionDataFactory>();
+builder.Services.AddScoped<IRepositoryFactory, RepositoryFactory>();
+builder.Services.AddScoped<IBusinessFactory, BusinessFactory>();
+builder.Services.AddScoped<IActivacionDataFactory, ActivacionDataFactory>();
 
 // Registrar implementaciones genéricas
 // Form - Utilizar solo AutoMapper para simplificar
+builder.Services.AddScoped<IGenericRepository<Form, int>, FormData>();
 builder.Services.AddScoped<IGenericBusiness<FormDto, int>, AutoMapperFormBusiness>();
+builder.Services.AddScoped<AutoMapperFormBusiness>();  // Registro explícito
+
+// También registrar la versión original de FormBusiness para compatibilidad usando factory específico
+builder.Services.AddScoped<FormBusiness>(provider => {
+    var repositoryFactory = provider.GetRequiredService<IRepositoryFactory>();
+    var logger = provider.GetRequiredService<ILogger<FormBusiness>>();
+    var mappingService = provider.GetRequiredService<IMappingService>();
+    return new FormBusiness(repositoryFactory, logger, mappingService);
+});
 
 // Module (usando alias para evitar ambigüedad)
 builder.Services.AddScoped<IGenericRepository<ModuleEntity, int>, ModuleData>();
 builder.Services.AddScoped<IGenericBusiness<ModuleDto, int>, AutoMapperModuleBusiness>();
+builder.Services.AddScoped<AutoMapperModuleBusiness>();  // Registro explícito
+builder.Services.AddScoped<ModuleBusiness>(provider => {
+    var repositoryFactory = provider.GetRequiredService<IRepositoryFactory>();
+    var logger = provider.GetRequiredService<ILogger<ModuleBusiness>>();
+    var mappingService = provider.GetRequiredService<IMappingService>();
+    return new ModuleBusiness(repositoryFactory, logger, mappingService);
+});
 
 // Person
 builder.Services.AddScoped<IGenericRepository<Person, int>, PersonData>();
 builder.Services.AddScoped<IGenericBusiness<PersonDto, int>, AutoMapperPersonBusiness>();
+builder.Services.AddScoped<AutoMapperPersonBusiness>();  // Registro explícito
+builder.Services.AddScoped<PersonBusiness>(provider => {
+    var repositoryFactory = provider.GetRequiredService<IRepositoryFactory>();
+    var logger = provider.GetRequiredService<ILogger<PersonBusiness>>();
+    var mappingService = provider.GetRequiredService<IMappingService>();
+    return new PersonBusiness(repositoryFactory, logger, mappingService);
+});
 
 // Rol
 builder.Services.AddScoped<IGenericRepository<Rol, int>, RolData>();
 builder.Services.AddScoped<IGenericBusiness<RolDto, int>, AutoMapperRolBusiness>();
+builder.Services.AddScoped<AutoMapperRolBusiness>();  // Registro explícito
+builder.Services.AddScoped<RolFormData>(); // Necesario para RolBusiness
+builder.Services.AddScoped<RolBusiness>(provider => {
+    var repositoryFactory = provider.GetRequiredService<IRepositoryFactory>();
+    var rolFormData = provider.GetRequiredService<RolFormData>();
+    var logger = provider.GetRequiredService<ILogger<RolBusiness>>();
+    var mappingService = provider.GetRequiredService<IMappingService>();
+    return new RolBusiness(repositoryFactory, rolFormData, logger, mappingService);
+});
 
 // User
 builder.Services.AddScoped<IGenericRepository<User, int>, UserData>();
 builder.Services.AddScoped<IGenericBusiness<UserDto, int>, AutoMapperUserBusiness>();
+builder.Services.AddScoped<AutoMapperUserBusiness>();  // Registro explícito
 builder.Services.AddScoped<UserData>(); // Necesario para métodos específicos
+builder.Services.AddScoped<UserBusiness>(provider => {
+    var repositoryFactory = provider.GetRequiredService<IRepositoryFactory>();
+    var userData = provider.GetRequiredService<UserData>();
+    var logger = provider.GetRequiredService<ILogger<UserBusiness>>();
+    var mappingService = provider.GetRequiredService<IMappingService>();
+    return new UserBusiness(repositoryFactory, userData, logger, mappingService);
+});
 
 // FormModule
 builder.Services.AddScoped<IGenericRepository<FormModule, int>, FormModuleData>();
 builder.Services.AddScoped<FormModuleData>(); // Necesario para métodos específicos
 builder.Services.AddScoped<IGenericBusiness<FormModuleDto, int>, AutoMapperFormModuleBusiness>();
+builder.Services.AddScoped<AutoMapperFormModuleBusiness>();  // Registro explícito
+builder.Services.AddScoped<FormModuleBusiness>(provider => {
+    var repositoryFactory = provider.GetRequiredService<IRepositoryFactory>();
+    var formModuleData = provider.GetRequiredService<FormModuleData>();
+    var logger = provider.GetRequiredService<ILogger<FormModuleBusiness>>();
+    var mappingService = provider.GetRequiredService<IMappingService>();
+    return new FormModuleBusiness(repositoryFactory, formModuleData, logger, mappingService);
+});
 
 // RolForm
 builder.Services.AddScoped<IRolFormRepository, RolFormData>();
 builder.Services.AddScoped<IGenericRepository<RolForm, int>, RolFormData>();
 builder.Services.AddScoped<IGenericBusiness<RolFormDto, int>, AutoMapperRolFormBusiness>();
+builder.Services.AddScoped<AutoMapperRolFormBusiness>();  // Registro explícito
+builder.Services.AddScoped<RolFormBusiness>(provider => {
+    var repositoryFactory = provider.GetRequiredService<IRepositoryFactory>();
+    var logger = provider.GetRequiredService<ILogger<RolFormBusiness>>();
+    var mappingService = provider.GetRequiredService<IMappingService>();
+    return new RolFormBusiness(repositoryFactory, logger, mappingService);
+});
 
 // UserRol
 builder.Services.AddScoped<IGenericRepository<UserRol, int>, UserRolData>();
 builder.Services.AddScoped<UserRolData>(); // Necesario para métodos específicos
 builder.Services.AddScoped<IGenericBusiness<UserRolDto, int>, AutoMapperUserRolBusiness>();
+builder.Services.AddScoped<AutoMapperUserRolBusiness>();  // Registro explícito
+builder.Services.AddScoped<UserRolBusiness>(provider => {
+    var repositoryFactory = provider.GetRequiredService<IRepositoryFactory>();
+    var userRolData = provider.GetRequiredService<UserRolData>();
+    var logger = provider.GetRequiredService<ILogger<UserRolBusiness>>();
+    var mappingService = provider.GetRequiredService<IMappingService>();
+    return new UserRolBusiness(repositoryFactory, userRolData, logger, mappingService);
+});
 
 // Registrar clases de ChangeLog
 builder.Services.AddScoped<ChangeLogData>();

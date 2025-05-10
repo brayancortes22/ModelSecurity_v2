@@ -10,8 +10,7 @@ using System.Threading.Tasks;
 using Utilities.Exceptions;
 
 namespace Web.Controllers
-{
-    /// <summary>
+{    /// <summary>
     /// Controlador para la gestión de roles en el sistema
     /// </summary>
     [Route("api/[controller]")]
@@ -22,25 +21,9 @@ namespace Web.Controllers
         private readonly IGenericBusiness<RolDto, int> _rolBusiness;
         private readonly RolBusiness _rolBusinessSpecific; // Para métodos específicos
         private readonly ILogger<RolController> _logger;
-        private readonly IBusinessFactory _businessFactory;
 
         /// <summary>
-        /// Constructor del controlador de roles utilizando BusinessFactory
-        /// </summary>
-        /// <param name="businessFactory">Fábrica de servicios de negocio</param>
-        /// <param name="logger">Logger para registro de eventos</param>
-        public RolController(
-            IBusinessFactory businessFactory,
-            ILogger<RolController> logger)
-        {
-            _businessFactory = businessFactory ?? throw new ArgumentNullException(nameof(businessFactory));
-            _rolBusiness = _businessFactory.CreateBusiness<RolDto, int>();
-            _rolBusinessSpecific = _businessFactory.CreateSpecificBusiness<RolBusiness>();
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        /// <summary>
-        /// Constructor alternativo que mantiene compatibilidad con código existente
+        /// Constructor único del controlador de roles
         /// </summary>
         public RolController(
             IGenericBusiness<RolDto, int> rolBusiness, 
@@ -50,7 +33,6 @@ namespace Web.Controllers
             _rolBusiness = rolBusiness ?? throw new ArgumentNullException(nameof(rolBusiness));
             _rolBusinessSpecific = rolBusinessSpecific ?? throw new ArgumentNullException(nameof(rolBusinessSpecific));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _businessFactory = null;
         }
 
         /// <summary>
