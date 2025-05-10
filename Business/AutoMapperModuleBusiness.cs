@@ -5,6 +5,7 @@ using Data.Factory;
 using Entity.DTOs;
 using Entity.Model;
 using Microsoft.Extensions.Logging;
+using Utilities.Exceptions;
 
 namespace Business
 {
@@ -22,22 +23,54 @@ namespace Business
         }
 
         /// <summary>
-        /// Validación específica para Module antes de guardar
+        /// Validación específica para ID de Módulo
         /// </summary>
-        protected override void ValidateBeforeSave(ModuleDto dto)
+        protected override void ValidateId(int id)
         {
-            base.ValidateBeforeSave(dto);
-
-            // Validaciones adicionales específicas para Module
-            if (string.IsNullOrWhiteSpace(dto.Name))
+            if (id <= 0)
             {
-                throw new Utilities.exeptions.BusinessExceptio("El nombre del módulo es obligatorio");
+                _logger.LogWarning("Se intentó operar con un módulo con ID inválido: {ModuleId}", id);
+                throw new ValidationException("id", "El ID del módulo debe ser mayor que cero");
+            }
+        }
+
+        /// <summary>
+        /// Validación específica para ModuleDto
+        /// </summary>
+        protected override void ValidateDto(ModuleDto moduleDto)
+        {
+            if (moduleDto == null)
+            {
+                throw new ValidationException("El objeto módulo no puede ser nulo");
             }
 
-            if (string.IsNullOrWhiteSpace(dto.Description))
+            if (string.IsNullOrWhiteSpace(moduleDto.Name))
             {
-                throw new Utilities.exeptions.BusinessExceptio("La descripción del módulo es obligatoria");
+                _logger.LogWarning("Se intentó crear/actualizar un módulo con Name vacío");
+                throw new ValidationException("Name", "El Name del módulo es obligatorio");
             }
+        }
+
+        /// <summary>
+        /// Implementación para actualizar parcialmente una entidad Module
+        /// </summary>
+        protected override bool PatchEntityFromDto(ModuleDto moduleDto, Module module)
+        {
+            bool updated = false;
+
+            if (!string.IsNullOrWhiteSpace(moduleDto.Name) && moduleDto.Name != module.Name)
+            {
+                module.Name = moduleDto.Name;
+                updated = true;
+            }
+            
+            if (moduleDto.Description != null && moduleDto.Description != module.Description)
+            {
+                module.Description = moduleDto.Description;
+                updated = true;
+            }
+
+            return updated;
         }
     }
 }
