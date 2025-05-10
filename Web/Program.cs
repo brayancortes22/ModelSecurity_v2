@@ -16,6 +16,9 @@ using Business.Interfaces; // Agregado: namespace para interfaces de negocio
 using Data.Repositories; // Agregado: namespace para repositorios
 using Data.Factory; // Agregado: namespace para factory de repositorios
 using Business.Factory; // Agregado: namespace para factory de servicios de negocio
+using Business.Mappers; // Agregado: namespace para mappers
+using System.Reflection; // Para AutoMapper
+using ModuleEntity = Entity.Model.Module; // Alias para evitar ambigüedad
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -104,6 +107,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 Console.WriteLine("Usando SQL Server como proveedor de base de datos");
 
+// Registrar AutoMapper con sus perfiles
+// Estamos siendo específicos con el namespace completo para evitar ambigüedades
+builder.Services.AddAutoMapper(typeof(Business.Mappers.BaseMapperProfile).Assembly);
+
+// Registrar servicio de mapeo
+builder.Services.AddScoped<Business.Mappers.IMappingService, Business.Mappers.MappingService>();
+
 // Registrar los factories (NUEVO)
 builder.Services.AddSingleton<IRepositoryFactory, RepositoryFactory>();
 builder.Services.AddSingleton<IBusinessFactory, BusinessFactory>();
@@ -113,25 +123,39 @@ builder.Services.AddSingleton<IActivacionDataFactory, ActivacionDataFactory>();
 // Form
 builder.Services.AddScoped<IGenericRepository<Form, int>, FormData>();
 builder.Services.AddScoped<IGenericBusiness<FormDto, int>, FormBusiness>();
+// Registrar nuestras versiones con AutoMapper
+builder.Services.AddScoped<AutoMapperFormBusiness>();
+builder.Services.AddScoped<AutoMapperModuleBusiness>();
+builder.Services.AddScoped<AutoMapperPersonBusiness>();
+builder.Services.AddScoped<AutoMapperRolBusiness>();
+builder.Services.AddScoped<AutoMapperUserBusiness>();
 
-// Module
-builder.Services.AddScoped<IGenericRepository<Module, int>, ModuleData>();
+// Module (usando alias para evitar ambigüedad)
+builder.Services.AddScoped<IGenericRepository<ModuleEntity, int>, ModuleData>();
 builder.Services.AddScoped<IGenericBusiness<ModuleDto, int>, ModuleBusiness>();
+// Versión alternativa con AutoMapper - comentada, descomentar cuando quieras usar esta versión
+// builder.Services.AddScoped<IGenericBusiness<ModuleDto, int>, AutoMapperModuleBusiness>();
 
 // Person
 builder.Services.AddScoped<IGenericRepository<Person, int>, PersonData>();
 builder.Services.AddScoped<IGenericBusiness<PersonDto, int>, PersonBusiness>();
+// Versión alternativa con AutoMapper - comentada, descomentar cuando quieras usar esta versión
+// builder.Services.AddScoped<IGenericBusiness<PersonDto, int>, AutoMapperPersonBusiness>();
 
 // Rol
 builder.Services.AddScoped<IGenericRepository<Rol, int>, RolData>();
 builder.Services.AddScoped<IGenericBusiness<RolDto, int>, RolBusiness>();
 builder.Services.AddScoped<RolBusiness>(); // También necesitamos registrar la implementación concreta para métodos específicos
+// Versión alternativa con AutoMapper - comentada, descomentar cuando quieras usar esta versión
+// builder.Services.AddScoped<IGenericBusiness<RolDto, int>, AutoMapperRolBusiness>();
 
 // User
 builder.Services.AddScoped<IGenericRepository<User, int>, UserData>();
 builder.Services.AddScoped<IGenericBusiness<UserDto, int>, UserBusiness>();
 builder.Services.AddScoped<UserData>(); // Registrar también la implementación concreta para métodos específicos
 builder.Services.AddScoped<UserBusiness>(); // Registrar también la implementación concreta para métodos específicos
+// Versión alternativa con AutoMapper - comentada, descomentar cuando quieras usar esta versión
+// builder.Services.AddScoped<IGenericBusiness<UserDto, int>, AutoMapperUserBusiness>();
 
 // A medida que vayas refactorizando otros servicios, podrás registrarlos de manera similar:
 // Ejemplo para futuras entidades:
