@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
+using Business.Factory;
 using Business.Interfaces;
+using Data.Factory;
 using Data.Interfaces;
 using Entity.Interfaces;
 using Utilities.Exceptions;
@@ -14,10 +16,18 @@ namespace Business
     public abstract class ActivacionBusinessBase<T> : IActivacionBusiness<T, int> where T : class, IActivable
     {
         protected readonly IActivacionData<T, int> _activacionData;
+        protected readonly IActivacionDataFactory? _activacionDataFactory;
 
+        public ActivacionBusinessBase(IActivacionDataFactory activacionDataFactory)
+        {
+            _activacionDataFactory = activacionDataFactory ?? throw new ArgumentNullException(nameof(activacionDataFactory));
+            _activacionData = _activacionDataFactory.CreateActivacionData<T>();
+        }
+        
         public ActivacionBusinessBase(IActivacionData<T, int> activacionData)
         {
-            _activacionData = activacionData;
+            _activacionData = activacionData ?? throw new ArgumentNullException(nameof(activacionData));
+            _activacionDataFactory = null;
         }
 
         /// <summary>

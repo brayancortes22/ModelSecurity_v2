@@ -38,8 +38,7 @@ namespace Web.Controllers
         public async Task<IActionResult> GetAllRolForms()
         {
             try
-            {
-                var rolForms = await _rolFormBusiness.GetAllRolFormsAsync();
+            {                var rolForms = await _rolFormBusiness.GetAllAsync();
                 return Ok(rolForms);
             }
             catch (ExternalServiceException ex)
@@ -61,7 +60,7 @@ namespace Web.Controllers
         {
             try
             {
-                var rolForm = await _rolFormBusiness.GetRolFormByIdAsync(id);
+                var rolForm = await _rolFormBusiness.GetByIdAsync(id);
                 return Ok(rolForm);
             }
             catch (ValidationException ex)
@@ -92,7 +91,7 @@ namespace Web.Controllers
         {
             try
             {
-                var createdRolForm = await _rolFormBusiness.CreateRolFormAsync(rolFormDto);
+                var createdRolForm = await _rolFormBusiness.CreateAsync(rolFormDto);
                 return CreatedAtAction(nameof(GetRolFormById), new { id = createdRolForm.Id }, createdRolForm);
             }
             catch (ValidationException ex)
@@ -122,7 +121,7 @@ namespace Web.Controllers
         {
             try
             {
-                var updatedRolForm = await _rolFormBusiness.UpdateRolFormAsync(id, rolFormDto);
+                var updatedRolForm = await _rolFormBusiness.UpdateAsync(id, rolFormDto);
                 return Ok(updatedRolForm);
             }
             catch (ValidationException ex)
@@ -157,7 +156,7 @@ namespace Web.Controllers
         {
             try
             {
-                var patchedRolForm = await _rolFormBusiness.PatchRolFormAsync(id, rolFormDto);
+                var patchedRolForm = await _rolFormBusiness.PatchAsync(id, rolFormDto);
                 return Ok(patchedRolForm);
             }
             catch (ValidationException ex)
@@ -190,7 +189,7 @@ namespace Web.Controllers
         {
             try
             {
-                await _rolFormBusiness.DeleteRolFormAsync(id);
+                await _rolFormBusiness.DeleteAsync(id);
                 return NoContent(); // 204 No Content
             }
             catch (ValidationException ex)
@@ -206,6 +205,62 @@ namespace Web.Controllers
             catch (ExternalServiceException ex)
             {
                 _logger.LogError(ex, "Error al eliminar relación rol-formulario con ID: {RolFormId}", id);
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene todas las asignaciones de formularios a un rol específico
+        /// </summary>
+        /// <param name="rolId">ID del rol</param>
+        /// <returns>Lista de asignaciones de formularios al rol</returns>
+        [HttpGet("byRol/{rolId}")]
+        [ProducesResponseType(typeof(IEnumerable<RolFormDto>), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> GetRolFormsByRolId(int rolId)
+        {
+            try
+            {
+                var rolForms = await _rolFormBusiness.GetByRolIdAsync(rolId);
+                return Ok(rolForms);
+            }
+            catch (ValidationException ex)
+            {
+                _logger.LogWarning(ex, "Validación fallida al obtener formularios para el rol con ID: {RolId}", rolId);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ExternalServiceException ex)
+            {
+                _logger.LogError(ex, "Error al obtener formularios para el rol con ID: {RolId}", rolId);
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene todas las asignaciones de roles a un formulario específico
+        /// </summary>
+        /// <param name="formId">ID del formulario</param>
+        /// <returns>Lista de asignaciones de roles al formulario</returns>
+        [HttpGet("byForm/{formId}")]
+        [ProducesResponseType(typeof(IEnumerable<RolFormDto>), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> GetRolFormsByFormId(int formId)
+        {
+            try
+            {
+                var rolForms = await _rolFormBusiness.GetByFormIdAsync(formId);
+                return Ok(rolForms);
+            }
+            catch (ValidationException ex)
+            {
+                _logger.LogWarning(ex, "Validación fallida al obtener roles para el formulario con ID: {FormId}", formId);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ExternalServiceException ex)
+            {
+                _logger.LogError(ex, "Error al obtener roles para el formulario con ID: {FormId}", formId);
                 return StatusCode(500, new { message = ex.Message });
             }
         }

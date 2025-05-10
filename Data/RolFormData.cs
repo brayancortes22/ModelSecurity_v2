@@ -12,7 +12,7 @@ using Data.Interfaces;
 
 namespace Data
 {
-    public class RolFormData : IGenericRepository<RolForm, int>
+    public class RolFormData : IGenericRepository<RolForm, int>, IRolFormRepository
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<RolFormData> _logger;
@@ -198,6 +198,48 @@ namespace Data
             {
                 _logger.LogError(ex, "Error al obtener formularios para el rol con ID: {RolId}", rolId);
                 throw; // Re-lanzamos para que sea manejada en la capa superior
+            }
+        }
+
+        /// <summary>
+        /// Obtiene todos los formularios asociados a un rol
+        /// </summary>
+        /// <param name="rolId">ID del rol</param>
+        /// <returns>Lista de RolForm para el rol especificado</returns>
+        public async Task<IEnumerable<RolForm>> GetByRolIdAsync(int rolId)
+        {
+            try
+            {
+                _logger.LogInformation("Obteniendo RolForms para el rol con ID: {RolId}", rolId);
+                return await _context.RolForm
+                    .Where(rf => rf.RolId == rolId)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener RolForms para el rol con ID: {RolId}", rolId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Obtiene todos los roles asociados a un formulario
+        /// </summary>
+        /// <param name="formId">ID del formulario</param>
+        /// <returns>Lista de RolForm para el formulario especificado</returns>
+        public async Task<IEnumerable<RolForm>> GetByFormIdAsync(int formId)
+        {
+            try
+            {
+                _logger.LogInformation("Obteniendo RolForms para el formulario con ID: {FormId}", formId);
+                return await _context.RolForm
+                    .Where(rf => rf.FormId == formId)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener RolForms para el formulario con ID: {FormId}", formId);
+                throw;
             }
         }
     }

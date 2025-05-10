@@ -1,4 +1,5 @@
 using Business.Interfaces;
+using Data.Factory;
 using Data.Interfaces;
 using Entity.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -18,12 +19,22 @@ namespace Business.Base
         where TId : IConvertible
     {
         protected readonly IGenericRepository<TEntity, TId> _repository;
+        protected readonly IRepositoryFactory? _repositoryFactory;
         protected readonly ILogger _logger;
 
+        protected GenericBusiness(IRepositoryFactory repositoryFactory, ILogger logger)
+        {
+            _repositoryFactory = repositoryFactory ?? throw new ArgumentNullException(nameof(repositoryFactory));
+            _repository = _repositoryFactory.CreateRepository<TEntity, TId>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+        
+        // Constructor alternativo que mantiene compatibilidad con código existente
         protected GenericBusiness(IGenericRepository<TEntity, TId> repository, ILogger logger)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _repositoryFactory = null;
         }
 
         public virtual async Task<IEnumerable<TDto>> GetAllAsync()

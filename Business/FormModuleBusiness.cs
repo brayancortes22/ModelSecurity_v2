@@ -1,6 +1,7 @@
 ﻿using Business.Base;
 using Business.Interfaces;
 using Data;
+using Data.Factory;
 using Data.Interfaces;
 using Entity.DTOs;
 using Entity.Model;
@@ -19,6 +20,15 @@ namespace Business
     {
         private readonly FormModuleData _formModuleDataSpecific;
 
+        public FormModuleBusiness(
+            IRepositoryFactory repositoryFactory,
+            FormModuleData formModuleDataSpecific,
+            ILogger<FormModuleBusiness> logger)
+            : base(repositoryFactory, logger)
+        {
+            _formModuleDataSpecific = formModuleDataSpecific ?? throw new ArgumentNullException(nameof(formModuleDataSpecific));
+        }
+        
         public FormModuleBusiness(
             IGenericRepository<FormModule, int> repository,
             FormModuleData formModuleDataSpecific,

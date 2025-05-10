@@ -1,10 +1,15 @@
-﻿using Data;
-using Data.Interfaces;
+﻿using Business.Base;
+using Business.Factory;
 using Business.Interfaces;
+using Data;
+using Data.Factory;
+using Data.Interfaces;
 using Entity.DTOs;
 using Entity.Model;
 using Microsoft.Extensions.Logging;
-using System.ComponentModel.DataAnnotations;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Utilities.Exceptions;
 
 namespace Business
@@ -14,17 +19,34 @@ namespace Business
     /// </summary>
     public class RolFormBusiness : IGenericBusiness<RolFormDto, int>
     {
-        private readonly RolFormData _rolFormData;
+        private readonly IRolFormRepository _rolFormRepository;
         private readonly IGenericRepository<RolForm, int> _repository;
         private readonly ILogger<RolFormBusiness> _logger;
+        private readonly IRepositoryFactory? _repositoryFactory;
 
-        public RolFormBusiness(RolFormData rolFormData, 
-                              IGenericRepository<RolForm, int> repository,
-                              ILogger<RolFormBusiness> logger)
+        /// <summary>
+        /// Constructor con inyección de RepositoryFactory
+        /// </summary>
+        public RolFormBusiness(
+            IRepositoryFactory repositoryFactory,
+            ILogger<RolFormBusiness> logger)
         {
-            _rolFormData = rolFormData;
-            _repository = repository;
-            _logger = logger;
+            _repositoryFactory = repositoryFactory ?? throw new ArgumentNullException(nameof(repositoryFactory));
+            _repository = _repositoryFactory.CreateSpecificRepository<IGenericRepository<RolForm, int>>();
+            _rolFormRepository = _repositoryFactory.CreateSpecificRepository<IRolFormRepository>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }        /// <summary>
+        /// Constructor tradicional para compatibilidad
+        /// </summary>
+        public RolFormBusiness(
+            IRolFormRepository rolFormRepository,
+            IGenericRepository<RolForm, int> repository,
+            ILogger<RolFormBusiness> logger)
+        {
+            _rolFormRepository = rolFormRepository ?? throw new ArgumentNullException(nameof(rolFormRepository));
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _repositoryFactory = null;
         }
 
         // Método para obtener todos los roles de formulario como DTOs
@@ -297,44 +319,52 @@ namespace Business
                 _logger.LogError(ex, "Error al activar la relación rol-formulario con ID {RolFormId}", id);
                 throw new ExternalServiceException("Base de datos", $"Error al activar la relación rol-formulario con ID {id}", ex);
             }
-        }
-
-        // Métodos específicos de RolFormBusiness
+        }        // Métodos específicos de RolFormBusiness que utilizan la interfaz IRolFormRepository
         
-        // Obtener todos los roles de formulario
-        public async Task<IEnumerable<RolFormDto>> GetAllRolFormsAsync()
+        /// <summary>
+        /// Obtiene todos los roles de formulario para un rol específico
+        /// </summary>
+        public async Task<IEnumerable<RolFormDto>> GetByRolIdAsync(int rolId)
         {
-            return await GetAllAsync();
+            if (rolId <= 0)
+            {
+                _logger.LogWarning("Se intentó obtener roles de formulario para un rol con ID inválido: {RolId}", rolId);
+                throw new ValidationException("rolId", "El ID del rol debe ser mayor que cero");
+            }
+            
+            try
+            {
+                var rolForms = await _rolFormRepository.GetByRolIdAsync(rolId);
+                return MapToDTOList(rolForms);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener roles de formulario para el rol con ID: {RolId}", rolId);
+                throw new ExternalServiceException("Base de datos", $"Error al recuperar los roles de formulario para el rol con ID {rolId}", ex);
+            }
         }
-
-        // Obtener un rol de formulario específico por ID
-        public async Task<RolFormDto> GetRolFormByIdAsync(int id)
+        
+        /// <summary>
+        /// Obtiene todos los roles de formulario para un formulario específico
+        /// </summary>
+        public async Task<IEnumerable<RolFormDto>> GetByFormIdAsync(int formId)
         {
-            return await GetByIdAsync(id);
-        }
-
-        // Crear un rol de formulario
-        public async Task<RolFormDto> CreateRolFormAsync(RolFormDto rolFormDto)
-        {
-            return await CreateAsync(rolFormDto);
-        }
-
-        // Actualizar un rol de formulario
-        public async Task<RolFormDto> UpdateRolFormAsync(int id, RolFormDto rolFormDto)
-        {
-            return await UpdateAsync(id, rolFormDto);
-        }
-
-        // Actualizar parcialmente un rol de formulario
-        public async Task<RolFormDto> PatchRolFormAsync(int id, RolFormDto rolFormDto)
-        {
-            return await PatchAsync(id, rolFormDto);
-        }
-
-        // Eliminar un rol de formulario
-        public async Task DeleteRolFormAsync(int id)
-        {
-            await DeleteAsync(id);
+            if (formId <= 0)
+            {
+                _logger.LogWarning("Se intentó obtener roles de formulario para un formulario con ID inválido: {FormId}", formId);
+                throw new ValidationException("formId", "El ID del formulario debe ser mayor que cero");
+            }
+            
+            try
+            {
+                var rolForms = await _rolFormRepository.GetByFormIdAsync(formId);
+                return MapToDTOList(rolForms);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener roles de formulario para el formulario con ID: {FormId}", formId);
+                throw new ExternalServiceException("Base de datos", $"Error al recuperar los roles de formulario para el formulario con ID {formId}", ex);
+            }
         }
 
         // Método para validar el DTO

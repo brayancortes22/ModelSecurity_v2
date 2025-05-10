@@ -14,6 +14,8 @@ using Entity.DTOs; // Agregado: namespace para FormDto
 using Entity.Interfaces; // Agregado: namespace para interfaces de entidades
 using Business.Interfaces; // Agregado: namespace para interfaces de negocio
 using Data.Repositories; // Agregado: namespace para repositorios
+using Data.Factory; // Agregado: namespace para factory de repositorios
+using Business.Factory; // Agregado: namespace para factory de servicios de negocio
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -102,6 +104,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 Console.WriteLine("Usando SQL Server como proveedor de base de datos");
 
+// Registrar los factories (NUEVO)
+builder.Services.AddSingleton<IRepositoryFactory, RepositoryFactory>();
+builder.Services.AddSingleton<IBusinessFactory, BusinessFactory>();
+builder.Services.AddSingleton<IActivacionDataFactory, ActivacionDataFactory>();
+
 // Registrar implementaciones genéricas
 // Form
 builder.Services.AddScoped<IGenericRepository<Form, int>, FormData>();
@@ -142,9 +149,9 @@ builder.Services.AddScoped<FormModuleData>(); // Para métodos específicos
 builder.Services.AddScoped<FormModuleBusiness>(); // Para métodos específicos
 
 // Registrar clases de RolForm
+builder.Services.AddScoped<IRolFormRepository, RolFormData>();
 builder.Services.AddScoped<IGenericRepository<RolForm, int>, RolFormData>();
 builder.Services.AddScoped<IGenericBusiness<RolFormDto, int>, RolFormBusiness>();
-builder.Services.AddScoped<RolFormData>(); // Para métodos específicos
 builder.Services.AddScoped<RolFormBusiness>(); // Para métodos específicos
 
 // Registrar clases de UserRol - Actualizado para usar patrón genérico

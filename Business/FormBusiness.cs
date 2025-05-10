@@ -1,6 +1,7 @@
 ﻿using Business.Base;
 using Business.Interfaces;
 using Data;
+using Data.Factory;
 using Data.Interfaces;
 using Entity.DTOs;
 using Entity.Model;
@@ -18,6 +19,11 @@ namespace Business
     /// </summary>
     public class FormBusiness : GenericBusiness<Form, FormDto, int>, IGenericBusiness<FormDto, int>
     {
+        public FormBusiness(IRepositoryFactory repositoryFactory, ILogger<FormBusiness> logger)
+            : base(repositoryFactory, logger)
+        {
+        }
+        
         public FormBusiness(IGenericRepository<Form, int> repository, ILogger<FormBusiness> logger)
             : base(repository, logger)
         {

@@ -1,5 +1,6 @@
 ﻿using Business.Base;
 using Business.Interfaces;
+using Data.Factory;
 using Data.Interfaces;
 using Entity.DTOs;
 using Entity.Model;
@@ -33,6 +34,11 @@ namespace Business
             }
         }
 
+        public PersonBusiness(IRepositoryFactory repositoryFactory, ILogger<PersonBusiness> logger)
+            : base(repositoryFactory, logger)
+        {
+        }
+        
         public PersonBusiness(IGenericRepository<Person, int> repository, ILogger<PersonBusiness> logger)
             : base(repository, logger)
         {

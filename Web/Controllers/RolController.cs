@@ -1,4 +1,5 @@
 ﻿using Business;
+using Business.Factory;
 using Business.Interfaces;
 using Entity.DTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -21,13 +22,26 @@ namespace Web.Controllers
         private readonly IGenericBusiness<RolDto, int> _rolBusiness;
         private readonly RolBusiness _rolBusinessSpecific; // Para métodos específicos
         private readonly ILogger<RolController> _logger;
+        private readonly IBusinessFactory _businessFactory;
 
         /// <summary>
-        /// Constructor del controlador de roles
+        /// Constructor del controlador de roles utilizando BusinessFactory
         /// </summary>
-        /// <param name="rolBusiness">Servicio de negocio genérico para roles</param>
-        /// <param name="rolBusinessSpecific">Servicio de negocio específico para roles</param>
+        /// <param name="businessFactory">Fábrica de servicios de negocio</param>
         /// <param name="logger">Logger para registro de eventos</param>
+        public RolController(
+            IBusinessFactory businessFactory,
+            ILogger<RolController> logger)
+        {
+            _businessFactory = businessFactory ?? throw new ArgumentNullException(nameof(businessFactory));
+            _rolBusiness = _businessFactory.CreateBusiness<RolDto, int>();
+            _rolBusinessSpecific = _businessFactory.CreateSpecificBusiness<RolBusiness>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        /// <summary>
+        /// Constructor alternativo que mantiene compatibilidad con código existente
+        /// </summary>
         public RolController(
             IGenericBusiness<RolDto, int> rolBusiness, 
             RolBusiness rolBusinessSpecific, 
@@ -36,6 +50,7 @@ namespace Web.Controllers
             _rolBusiness = rolBusiness ?? throw new ArgumentNullException(nameof(rolBusiness));
             _rolBusinessSpecific = rolBusinessSpecific ?? throw new ArgumentNullException(nameof(rolBusinessSpecific));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _businessFactory = null;
         }
 
         /// <summary>
@@ -122,10 +137,11 @@ namespace Web.Controllers
         }
 
         /// <summary>
-        /// Actualiza un rol existente en el sistema
+        /// Actualiza un rol existente
         /// </summary>
         /// <param name="id">ID del rol a actualizar</param>
         /// <param name="rolDto">Datos actualizados del rol</param>
+        /// <returns>Rol actualizado</returns>
         [HttpPut("{id}")]
         [ProducesResponseType(typeof(RolDto), 200)]
         [ProducesResponseType(400)]
@@ -159,7 +175,8 @@ namespace Web.Controllers
         /// Actualiza parcialmente un rol existente
         /// </summary>
         /// <param name="id">ID del rol a actualizar</param>
-        /// <param name="rolDto">Datos parciales a aplicar</param>
+        /// <param name="rolDto">Datos parciales del rol</param>
+        /// <returns>Rol actualizado</returns>
         [HttpPatch("{id}")]
         [ProducesResponseType(typeof(RolDto), 200)]
         [ProducesResponseType(400)]
@@ -179,7 +196,7 @@ namespace Web.Controllers
             }
             catch (EntityNotFoundException ex)
             {
-                _logger.LogInformation(ex, "Rol no encontrado para aplicar patch con ID: {RolId}", id);
+                _logger.LogInformation(ex, "Rol no encontrado para patch con ID: {RolId}", id);
                 return NotFound(new { message = ex.Message });
             }
             catch (ExternalServiceException ex)
@@ -190,9 +207,10 @@ namespace Web.Controllers
         }
 
         /// <summary>
-        /// Elimina permanentemente un rol
+        /// Elimina un rol del sistema
         /// </summary>
         /// <param name="id">ID del rol a eliminar</param>
+        /// <returns>Resultado de la operación</returns>
         [HttpDelete("{id}")]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
@@ -217,16 +235,17 @@ namespace Web.Controllers
             }
             catch (ExternalServiceException ex)
             {
-                _logger.LogError(ex, "Error al eliminar rol con ID: {RolId}. Posible dependencia.", id);
-                return StatusCode(500, new { message = "Error al eliminar el rol. Verifique si hay dependencias." });
+                _logger.LogError(ex, "Error al eliminar rol con ID: {RolId}", id);
+                return StatusCode(500, new { message = ex.Message });
             }
         }
 
         /// <summary>
-        /// Desactiva (elimina lógicamente) un rol
+        /// Desactiva un rol (eliminación lógica)
         /// </summary>
         /// <param name="id">ID del rol a desactivar</param>
-        [HttpDelete("{id}/soft")]
+        /// <returns>Resultado de la operación</returns>
+        [HttpDelete("soft/{id}")]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
@@ -240,26 +259,27 @@ namespace Web.Controllers
             }
             catch (ValidationException ex)
             {
-                _logger.LogWarning(ex, "Validación fallida al realizar soft-delete de rol con ID: {RolId}", id);
+                _logger.LogWarning(ex, "Validación fallida al desactivar rol con ID: {RolId}", id);
                 return BadRequest(new { message = ex.Message });
             }
             catch (EntityNotFoundException ex)
             {
-                _logger.LogInformation(ex, "Rol no encontrado para soft-delete con ID: {RolId}", id);
+                _logger.LogInformation(ex, "Rol no encontrado para desactivar con ID: {RolId}", id);
                 return NotFound(new { message = ex.Message });
             }
             catch (ExternalServiceException ex)
             {
-                _logger.LogError(ex, "Error al realizar soft-delete de rol con ID: {RolId}", id);
+                _logger.LogError(ex, "Error al desactivar rol con ID: {RolId}", id);
                 return StatusCode(500, new { message = ex.Message });
             }
         }
 
         /// <summary>
-        /// Reactiva un rol previamente desactivado
+        /// Activa un rol previamente desactivado
         /// </summary>
-        /// <param name="id">ID del rol a reactivar</param>
-        [HttpPost("{id}/activate")]
+        /// <param name="id">ID del rol a activar</param>
+        /// <returns>Resultado de la operación</returns>
+        [HttpPut("activate/{id}")]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
@@ -273,7 +293,7 @@ namespace Web.Controllers
             }
             catch (ValidationException ex)
             {
-                _logger.LogWarning(ex, "Validación fallida al intentar activar rol {RolId}", id);
+                _logger.LogWarning(ex, "Validación fallida al activar rol con ID: {RolId}", id);
                 return BadRequest(new { message = ex.Message });
             }
             catch (EntityNotFoundException ex)
@@ -283,46 +303,7 @@ namespace Web.Controllers
             }
             catch (ExternalServiceException ex)
             {
-                _logger.LogError(ex, "Error de servicio externo al activar rol {RolId}", id);
-                return StatusCode(500, new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error inesperado al activar rol {RolId}", id);
-                return StatusCode(500, new { message = "Ocurrió un error inesperado." });
-            }
-        }
-
-        /// <summary>
-        /// Obtiene todos los formularios asignados a un rol específico
-        /// </summary>
-        /// <param name="id">ID del rol</param>
-        /// <returns>Lista de formularios asignados al rol</returns>
-        [HttpGet("{id}/forms")]
-        [ProducesResponseType(typeof(IEnumerable<FormDto>), 200)]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(404)]
-        [ProducesResponseType(500)]
-        public async Task<IActionResult> GetFormsByRolId(int id)
-        {
-            try
-            {
-                var forms = await _rolBusinessSpecific.GetFormsByRolIdAsync(id);
-                return Ok(forms);
-            }
-            catch (ValidationException ex)
-            {
-                _logger.LogWarning(ex, "Validación fallida para obtener formularios del rol con ID: {RolId}", id);
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (EntityNotFoundException ex)
-            {
-                _logger.LogInformation(ex, "Rol no encontrado para obtener formularios con ID: {RolId}", id);
-                return NotFound(new { message = ex.Message });
-            }
-            catch (ExternalServiceException ex)
-            {
-                _logger.LogError(ex, "Error al obtener formularios del rol con ID: {RolId}", id);
+                _logger.LogError(ex, "Error al activar rol con ID: {RolId}", id);
                 return StatusCode(500, new { message = ex.Message });
             }
         }

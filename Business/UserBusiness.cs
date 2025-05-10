@@ -1,6 +1,7 @@
 ﻿using Business.Base;
 using Business.Interfaces;
 using Data;
+using Data.Factory;
 using Data.Interfaces;
 using Entity.DTOs;
 using Entity.Model;
@@ -21,6 +22,15 @@ namespace Business
     {
         private readonly UserData _userDataSpecific;
 
+        public UserBusiness(
+            IRepositoryFactory repositoryFactory, 
+            UserData userDataSpecific,
+            ILogger<UserBusiness> logger)
+            : base(repositoryFactory, logger)
+        {
+            _userDataSpecific = userDataSpecific ?? throw new ArgumentNullException(nameof(userDataSpecific));
+        }
+        
         public UserBusiness(
             IGenericRepository<User, int> repository, 
             UserData userDataSpecific,

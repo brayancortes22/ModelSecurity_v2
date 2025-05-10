@@ -1,6 +1,7 @@
 ﻿using Business.Base;
 using Business.Interfaces;
 using Data;
+using Data.Factory;
 using Data.Interfaces;
 using Entity.DTOs;
 using Entity.Model;
@@ -20,6 +21,12 @@ namespace Business
     {
         private readonly RolFormData _rolFormData; // Para obtener los formularios asociados a un rol
 
+        public RolBusiness(IRepositoryFactory repositoryFactory, RolFormData rolFormData, ILogger<RolBusiness> logger)
+            : base(repositoryFactory, logger)
+        {
+            _rolFormData = rolFormData ?? throw new ArgumentNullException(nameof(rolFormData));
+        }
+        
         public RolBusiness(IGenericRepository<Rol, int> repository, RolFormData rolFormData, ILogger<RolBusiness> logger)
             : base(repository, logger)
         {
