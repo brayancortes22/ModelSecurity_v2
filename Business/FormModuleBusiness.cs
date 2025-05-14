@@ -32,7 +32,7 @@ namespace Business
             _formModuleDataSpecific = formModuleDataSpecific ?? throw new ArgumentNullException(nameof(formModuleDataSpecific));
             _mappingService = mappingService ?? throw new ArgumentNullException(nameof(mappingService));
         }
-        
+
         public FormModuleBusiness(
             IGenericRepository<FormModule, int> repository,
             FormModuleData formModuleDataSpecific,
@@ -121,25 +121,7 @@ namespace Business
             }
         }
 
-        /// <summary>
-        /// Mapea un DTO a su entidad correspondiente
-        /// </summary>
-        protected override FormModule MapToEntity(FormModuleDto dto)
-        {
-            var entity = _mappingService.Map<FormModuleDto, FormModule>(dto);
-            // Asegurar que esté activo por defecto para nuevas entidades
-            if (entity.Id == 0)
-                entity.Active = true;
-            return entity;
-        }
-
-        /// <summary>
-        /// Mapea una entidad a su DTO correspondiente
-        /// </summary>
-        protected override FormModuleDto MapToDto(FormModule entity)
-        {
-            return _mappingService.Map<FormModule, FormModuleDto>(entity);
-        }
+        
 
         /// <summary>
         /// Actualiza una entidad existente a partir de un DTO
@@ -183,6 +165,16 @@ namespace Business
         protected override IEnumerable<FormModuleDto> MapToDtoList(IEnumerable<FormModule> entities)
         {
             return _mappingService.MapCollectionToDto<FormModule, FormModuleDto>(entities);
+        }
+
+        protected override FormModuleDto MapToDto(FormModule entity)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override FormModule MapToEntity(FormModuleDto dto)
+        {
+            throw new NotImplementedException();
         }
     }
 }

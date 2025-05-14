@@ -8,20 +8,20 @@ namespace Business.Mappers
     /// Perfil de mapeo para la entidad Rol
     /// </summary>
     public class RolProfile : BaseMapperProfile
-    {
-        public RolProfile()
-        {
-            // Mapeo de Rol a RolDto
-            CreateMap<Rol, RolDto>();
+    {        public RolProfile()
+        {            // Mapeo de Rol a RolDto
+            CreateMap<Rol, RolDto>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.TypeRol, opt => opt.MapFrom(src => src.TypeRol))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+                .ForMember(dest => dest.Active, opt => opt.MapFrom(src => src.Active));
             
             // Mapeo de RolDto a Rol
             CreateMap<RolDto, Rol>()
                 .ForMember(dest => dest.Id, opt => opt.Condition(src => src.Id > 0))
-                .ForMember(dest => dest.CreateDate, opt => opt.Ignore()) // Ignorar propiedades de auditoría
-                .ForMember(dest => dest.UpdateDate, opt => opt.Ignore())
-                .ForMember(dest => dest.DeleteDate, opt => opt.Ignore())
-                .ForMember(dest => dest.RolForms, opt => opt.Ignore()) // Ignorar propiedades de navegación
-                .ForMember(dest => dest.UserRols, opt => opt.Ignore());
+                .ForMember(dest => dest.TypeRol, opt => opt.MapFrom(src => src.TypeRol))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+                .ForMember(dest => dest.Active, opt => opt.MapFrom(src => src.Active));
         }
     }
 }

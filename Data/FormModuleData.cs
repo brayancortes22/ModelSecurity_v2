@@ -30,10 +30,10 @@ namespace Data
         public async Task<IEnumerable<FormModule>> GetFormsByModuleIdAsync(int moduleId)
         {
             try
-            {
+            {                
                 return await _context.Set<FormModule>()
-                    .Where(fm => fm.ModuleId == moduleId && fm.StatusProcedure == "true" && fm.Active)
                     .Include(fm => fm.Form)
+                    .Where(fm => fm.ModuleId == moduleId && fm.Form.Active)
                     .ToListAsync();
             }
             catch (Exception ex)
@@ -51,10 +51,10 @@ namespace Data
         public async Task<IEnumerable<FormModule>> GetModulesByFormIdAsync(int formId)
         {
             try
-            {
+            {                
                 return await _context.Set<FormModule>()
-                    .Where(fm => fm.FormId == formId && fm.StatusProcedure == "true" && fm.Active)
                     .Include(fm => fm.Module)
+                    .Where(fm => fm.FormId == formId && fm.Module.Active)
                     .ToListAsync();
             }
             catch (Exception ex)
